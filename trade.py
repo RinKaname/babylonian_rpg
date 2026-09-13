@@ -221,8 +221,8 @@ class TradeManager:
         # Step 4: Purchase Domestic Export Cargo from Local Market
         total_cargo_cost = 0.0
         for g_id, qty in cargo_to_export.items():
-            unit_p = self.market.get_price(g_id)
-            total_cargo_cost += unit_p * qty
+            _, cost, _, _, _ = self.market.calculate_trade_pricing(g_id, qty, is_buy=True)
+            total_cargo_cost += cost
 
         if investor.wallet.silver_shekels < (total_silver_needed + total_cargo_cost):
             return False, f"Cannot afford domestic export cargo! Costs {total_cargo_cost:.1f} silver shekels on local market.", None

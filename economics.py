@@ -292,9 +292,95 @@ class Market:
             return 0.0
         return round(self.goods[good_id].stock, 1)
 
+    def _anti_derivative_price(self, good_id: str, s: float) -> float:
+        r"""
+        Calculates the exact closed-form indefinite integral F(s) = \int_0^s P(u) du.
+        Used for marginal slippage pricing to eliminate instant round-trip arbitrage.
+        """
+        if good_id not in self.goods:
+            return 0.0
+        state = self.goods[good_id]
+        b0 = max(state.base_stock, 1.0)
+        p0 = state.base_price
+        s = max(0.0, s)
+        s_floor = (32.0 / 17.0) * b0  # Stock level where price hits 0.25 * base_price floor
+
+        if s <= s_floor:
+            return p0 * (1.85 * s - (0.85 / (2.0 * b0)) * (s ** 2))
+        else:
+            f_floor = p0 * (1.85 * s_floor - (0.85 / (2.0 * b0)) * (s_floor ** 2))
+            return f_floor + 0.25 * p0 * (s - s_floor)
+
+    def calculate_trade_pricing(self, good_id: str, volume: float, is_buy: bool) -> Tuple[float, float, float, float, float]:
+        """
+        Calculates exact marginal slippage trade pricing using closed-form curve integration.
+        Returns:
+            (actual_vol, total_base_cost, avg_execution_price, start_spot_price, end_spot_price)
+        - For buys: stock moves from S0 down to S0 - actual_vol (capped by available stock).
+        - For sells: stock moves from S0 up to S0 + volume.
+        Guarantees that an instant Buy Q -> Sell Q round-trip yields exactly 0.00 silver net profit.
+        """
+        if good_id not in self.goods or volume <= 0:
+            return 0.0, 0.0, 0.0, 0.0, 0.0
+
+        state = self.goods[good_id]
+        s0 = state.stock
+        start_spot = self.calculate_price(good_id)
+
+        if is_buy:
+            actual_vol = min(volume, s0)
+            if actual_vol <= 0:
+                return 0.0, 0.0, 0.0, start_spot, start_spot
+            s1 = max(0.0, s0 - actual_vol)
+            s_low, s_high = s1, s0
+        else:
+            actual_vol = volume
+            s1 = s0 + actual_vol
+            s_low, s_high = s0, s1
+
+        total_base_cost = max(0.0, self._anti_derivative_price(good_id, s_high) - self._anti_derivative_price(good_id, s_low))
+        avg_price = total_base_cost / actual_vol if actual_vol > 0 else start_spot
+
+        # Calculate what the ending spot price will be after this trade volume
+        old_stock = state.stock
+        state.stock = s1
+        end_spot = self.calculate_price(good_id)
+        state.stock = old_stock
+
+        return actual_vol, round(total_base_cost, 3), round(avg_price, 3), start_spot, end_spot
+
+    def calculate_max_affordable_volume(self, good_id: str, silver_budget: float, tax_rate: float = 0.0) -> float:
+        """
+        Calculates the exact maximum commodity volume a player can afford,
+        accounting for upward marginal slippage and municipal sales taxes.
+        Uses monotonic binary search with 0.1 unit precision.
+        """
+        if good_id not in self.goods or silver_budget <= 0.0:
+            return 0.0
+        stock = self.get_stock(good_id)
+        if stock <= 0.0:
+            return 0.0
+
+        eff_tax = max(0.0, tax_rate)
+        # Check if budget can afford the entire available warehouse stock
+        _, total_cost, _, _, _ = self.calculate_trade_pricing(good_id, stock, is_buy=True)
+        if silver_budget >= total_cost * (1.0 + eff_tax):
+            return stock
+
+        low = 0.0
+        high = stock
+        for _ in range(25):
+            mid = (low + high) / 2.0
+            _, cost, _, _, _ = self.calculate_trade_pricing(good_id, mid, is_buy=True)
+            if cost * (1.0 + eff_tax) <= silver_budget:
+                low = mid
+            else:
+                high = mid
+        return math.floor(low * 10.0) / 10.0
+
     def execute_buy(self, good_id: str, volume: float) -> float:
         """
-        Executes a physical purchase from the Kārum warehouse.
+        Executes a physical purchase from the Kārum warehouse with marginal slippage.
         Deducts stock, triggers shortage if stock is critical (<=10%), and updates spot price.
         Returns actual volume purchased (clamped to available stock).
         """
@@ -309,7 +395,7 @@ class Market:
 
     def execute_sell(self, good_id: str, volume: float) -> float:
         """
-        Executes a physical deposit/sale into the Kārum warehouse.
+        Executes a physical deposit/sale into the Kārum warehouse with marginal slippage.
         Increases stock, relieves shortages, and lowers spot price.
         Returns actual volume sold.
         """

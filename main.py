@@ -484,13 +484,11 @@ class BabylonianGame:
                         continue
 
                     tax_rate = self.war_engine.get_tax_rates().get("sales_tax_rate", 0.0)
-                    eff_price = cur_p * (1.0 + tax_rate)
-                    max_afford = int(self.player.wallet.silver_shekels // eff_price)
-                    max_buyable = min(max_afford, int(avail_stk))
+                    max_buyable = self.market.calculate_max_affordable_volume(g_id, self.player.wallet.silver_shekels, tax_rate=tax_rate)
                     tax_info = f" (Includes {tax_rate*100:.0f}% Mayoral Municipal Duty)" if tax_rate > 0 else ""
                     print(f" Current spot price: {cur_p:.3f} silver each{tax_info}.")
-                    print(f" Warehouse Stock: {avail_stk:.1f} units | Max you can buy: {max_buyable} units.")
-                    qty_str = input(f" How many units would you like to buy (Max: {max_buyable})? ").strip()
+                    print(f" Warehouse Stock: {avail_stk:.1f} units | Max you can afford: {max_buyable:.1f} units.")
+                    qty_str = input(f" How many units would you like to buy (Max: {max_buyable:.1f})? ").strip()
                     try:
                         qty = float(qty_str)
                         if qty <= 0:
@@ -498,17 +496,23 @@ class BabylonianGame:
                         if qty > avail_stk:
                             print(f" [!] Only {avail_stk:.1f} units are available in the warehouse!")
                             continue
-                        base_cost = cur_p * qty
+                        actual_vol, base_cost, avg_p, s_spot, e_spot = self.market.calculate_trade_pricing(g_id, qty, is_buy=True)
                         tax_paid = base_cost * tax_rate
+                        total_needed = base_cost + tax_paid
+                        if self.player.wallet.silver_shekels < total_needed:
+                            print(f" [!] Insufficient silver! Need {total_needed:.2f} silver shekels (incl. tax), but you hold {self.player.wallet.silver_shekels:.2f}.")
+                            continue
+
                         if self.player.buy_good(g_id, qty, self.market, self.registry, sales_tax_rate=tax_rate):
                             if tax_paid > 0:
                                 self.war_engine.city_treasury_silver += tax_paid
                             new_p = self.market.get_price(g_id)
                             new_stk = self.market.get_stock(g_id)
-                            print(f" [+] Success! Purchased {qty:.1f} {g_id} for {base_cost + tax_paid:.2f} silver shekels!")
+                            print(f" [+] Success! Purchased {actual_vol:.1f} {g_id} for {total_needed:.2f} silver shekels!")
+                            print(f"     Execution: Avg price {avg_p:.3f} silver/unit (Spot slipped: {s_spot:.3f} -> {new_p:.3f}).")
                             if tax_paid > 0:
                                 print(f"     Remitted {tax_paid:.2f} silver in municipal duty into City Coffers (Bīt Ālī).")
-                            print(f"     Warehouse stock fell to {new_stk:.1f}; spot price adjusted to {new_p:.3f} silver/unit.")
+                            print(f"     Warehouse stock fell to {new_stk:.1f} units.")
                         else:
                             print(" [!] Transaction failed: Insufficient silver shekels.")
                     except ValueError:
@@ -522,7 +526,8 @@ class BabylonianGame:
                     continue
                 print("\n Your Sacks:")
                 for item, count in self.player.inventory.items():
-                    print(f"  * {item}: {count:.1f} units (Value: {self.market.get_price(item)*count:.2f} silver)")
+                    _, est_rev, _, _, _ = self.market.calculate_trade_pricing(item, count, is_buy=False)
+                    print(f"  * {item}: {count:.1f} units (Estimated Market Value: {est_rev:.2f} silver)")
                 g_id = input(" Enter commodity ID to sell: ").strip().lower()
                 if g_id in self.player.inventory:
                     avail = self.player.inventory[g_id]
@@ -530,12 +535,13 @@ class BabylonianGame:
                     try:
                         qty = float(qty_str) if qty_str else avail
                         if 0 < qty <= avail:
-                            cur_p = self.market.get_price(g_id)
+                            actual_vol, rev, avg_p, s_spot, e_spot = self.market.calculate_trade_pricing(g_id, qty, is_buy=False)
                             if self.player.sell_good(g_id, qty, self.market, self.registry):
                                 new_p = self.market.get_price(g_id)
                                 new_stk = self.market.get_stock(g_id)
-                                print(f" [+] Sold {qty:.1f} {g_id} for {cur_p * qty:.2f} silver shekels!")
-                                print(f"     Warehouse stock rose to {new_stk:.1f}; spot price adjusted to {new_p:.3f} silver/unit.")
+                                print(f" [+] Sold {actual_vol:.1f} {g_id} for {rev:.2f} silver shekels!")
+                                print(f"     Execution: Avg price {avg_p:.3f} silver/unit (Spot slipped: {s_spot:.3f} -> {new_p:.3f}).")
+                                print(f"     Warehouse stock rose to {new_stk:.1f} units.")
                         else:
                             print(" [!] Invalid quantity.")
                     except ValueError:

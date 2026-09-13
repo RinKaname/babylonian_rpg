@@ -1,0 +1,186 @@
+{
+  "year": 1,
+  "season_idx": 1,
+  "day": 1,
+  "hour": 8.0,
+  "days_per_season": 14,
+  "workshop_tier": 3,
+  "hired_artisans": 3,
+  "wage_policy": "STATUTORY",
+  "news_ticker": [
+    "King Hammurabi has inscribed his righteous laws upon a diorite stele at the temple of Shamash.",
+    "Euphrates waters are calm. Canals across the southern plains are open for irrigation.",
+    "Esagila Temple priests performed the sacred sacrifices. CPI is holding at 1.118x."
+  ],
+  "player": {
+    "name": "Chakra",
+    "patronymic": "ashur-nasir",
+    "social_class": "AWILUM",
+    "age": 20,
+    "health": 100.0,
+    "energy": 100.0,
+    "hunger": 16.656675574784643,
+    "thirst": 32.48501336217696,
+    "silver_shekels": 19793.08891111111,
+    "barley_qa": 58.0,
+    "owned_land_acres": 115.0,
+    "owned_oxen": 4,
+    "owned_sheep": 0,
+    "civic_office": "Rabi\u0101num (City Governor & Mayor)",
+    "reputation": 100.0,
+    "inventory": {
+      "woolen_cloth": 1.0,
+      "pottery": 35.0,
+      "barley_beer": 25.0,
+      "barley": 58.0,
+      "cress": 3.4000000000000004,
+      "mustard": 3.5,
+      "sesame": 1.0,
+      "sesame_oil": 1.0,
+      "timber": 16.300000000000026,
+      "reeds": 17.5,
+      "bread": 10.0,
+      "copper_ore": 2.0,
+      "tin": 0.19999999999999996
+    },
+    "seal": {
+      "material": "Royal Gold-Mounted Lapis Lazuli",
+      "patron_deity": "Shamash",
+      "prestige": 20
+    }
+  },
+  "marriage": {
+    "bride_name": "Amat-Ba'u",
+    "bride_patronymic": "Marduk-nasir",
+    "bride_social_class": "AWILUM",
+    "terhatum": 15.0,
+    "dowry_silver": 40.0,
+    "dowry_land": 10.0,
+    "dowry_oxen": 1,
+    "year": 1
+  },
+  "tablets": [
+    {
+      "id": "tablet_marriage_covenant_0001",
+      "doc_type": "MARRIAGE_CONTRACT",
+      "summary": "Marriage Covenant between Chakra, son of ashur-nasir and Amat-Ba'u, daughter of Marduk-nasir. Bride-Price (Terhatum): 15.0 shekels. Dowry (Seriktum): 40.0 silver, 10.0 acres. Statutory Covenant under the Code of Hammurabi \u00a7 128.",
+      "parties": [
+        "Chakra, son of ashur-nasir",
+        "Amat-Ba'u, daughter of Marduk-nasir"
+      ],
+      "principal": 15.0
+    },
+    {
+      "id": "tablet_ennoblement_chakra",
+      "doc_type": "ROYAL_DECREE",
+      "summary": "Imperial Charter of Patrician Ennoblement: Chakra, son of ashur-nasir is hereby enrolled into the rank of Aw\u012blum by the Puhrum Council of Elders and King Hammurabi. Granted full patrician franchise, standing in the courts of Shamash, and eligibility for all high civic magistracies.",
+      "parties": [
+        "Chakra, son of ashur-nasir",
+        "Puhrum Council of Elders",
+        "King Hammurabi"
+      ],
+      "principal": 0.0
+    },
+    {
+      "id": "deed_003",
+      "doc_type": "LAND_DEED",
+      "summary": "Purchase of 100.0 iku of arable canal field at 20 silver/acre",
+      "parties": [
+        "Chakra, son of ashur-nasir",
+        "Crown Lands Administration"
+      ],
+      "principal": 2000.0
+    }
+  ],
+  "has_harvested_spring": false,
+  "sowed_acres": 115.0,
+  "army": {
+    "regiment_counter": 3,
+    "city_treasury_silver": 1249.2697,
+    "city_granary_barley": 2376.0,
+    "gate_toll_revenue_daily": 0.5,
+    "tax_policy": "FREE_TRADE",
+    "regiments": [
+      {
+        "id": "reg_001",
+        "unit_type": "REDU",
+        "soldiers_count": 12,
+        "is_equipped": true,
+        "experience_level": 2,
+        "stationed_gate": "Ishtar Gate (North / Processional Way)"
+      },
+      {
+        "id": "reg_002",
+        "unit_type": "BAIRU",
+        "soldiers_count": 10,
+        "is_equipped": true,
+        "experience_level": 2,
+        "stationed_gate": "Gate of Shamash (South / Canals & Fields)"
+      }
+    ]
+  },
+  "market_stocks": {
+    "barley": 1140.0,
+    "emmer": 383.0,
+    "dates": 525.75,
+    "sesame": 394.05,
+    "mustard": 150.0,
+    "cress": 150.0,
+    "dried_fish": 466.0,
+    "raw_wool": 583.0,
+    "flax": 250.0,
+    "animal_dung": 555.5,
+    "barley_beer": 60.0,
+    "spelt_beer": 128.75,
+    "bread": 488.95,
+    "sweet_pastry": 107.25,
+    "sesame_oil": 257.5,
+    "woolen_cloth": 291.075,
+    "fine_linen": 97.875,
+    "pottery": 350.0,
+    "mudbrick": 1042.5,
+    "bitumen": 295.325,
+    "reeds": 795.75,
+    "timber": 200.0,
+    "copper_ore": 141.5,
+    "tin": 79.15,
+    "bronze_tools": 164.7,
+    "perfume": 101.7,
+    "cylinder_seal": 35.0,
+    "bronze_weapons": 45.0,
+    "composite_bow": 25.0,
+    "war_chariot": 40.4
+  },
+  "market_prices": {
+    "barley": 0.731,
+    "emmer": 0.881,
+    "dates": 0.727,
+    "sesame": 1.215,
+    "mustard": 2.0,
+    "cress": 2.2,
+    "dried_fish": 0.423,
+    "raw_wool": 1.024,
+    "flax": 1.8,
+    "animal_dung": 0.118,
+    "barley_beer": 1.033,
+    "spelt_beer": 1.681,
+    "bread": 0.56,
+    "sweet_pastry": 2.726,
+    "sesame_oil": 2.241,
+    "woolen_cloth": 3.076,
+    "fine_linen": 8.145,
+    "pottery": 0.3,
+    "mudbrick": 0.145,
+    "bitumen": 1.115,
+    "reeds": 0.1,
+    "timber": 6.0,
+    "copper_ore": 4.193,
+    "tin": 12.108,
+    "bronze_tools": 5.361,
+    "perfume": 14.783,
+    "cylinder_seal": 20.0,
+    "bronze_weapons": 8.0,
+    "composite_bow": 35.0,
+    "war_chariot": 30.0
+  }
+}
