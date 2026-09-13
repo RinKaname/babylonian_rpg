@@ -77,6 +77,9 @@
   ],
   "army": {
     "regiment_counter": 3,
+    "city_treasury_silver": 250.0,
+    "city_granary_barley": 3000.0,
+    "gate_toll_revenue_daily": 1.8,
     "regiments": [
       {
         "id": "reg_001",

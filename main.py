@@ -1373,20 +1373,25 @@ class BabylonianGame:
             print("=" * 78)
             print(f" City Security Rating: {security_pct:.1f}% ({sec_label})")
             print(f" Standing Forces:      {len(self.war_engine.standing_army)} Regiments ({total_soldiers} Active Warriors)")
-            print(f" Daily Garrison Upkeep: {daily_silver:.2f} silver shekels | {daily_grain:.0f} qa barley")
-            print(f" Your Treasury:        {self.player.wallet.silver_shekels:.2f} silver | {self.player.wallet.barley_qa:.0f} qa barley")
+            print(f" Daily Garrison Upkeep: {daily_silver:.2f} silver | {daily_grain:.0f} qa barley (Funded by City Coffers)")
+            print("-" * 78)
+            print(" BABYLON MUNICIPAL COFFERS (BĪT ĀLĪ):")
+            print(f"  * Public Civic Treasury: {self.war_engine.city_treasury_silver:7.2f} silver shekels (Toll Inflow: +{self.war_engine.gate_toll_revenue_daily:.2f}/day)")
+            print(f"  * Public Municipal Silos: {self.war_engine.city_granary_barley:7.0f} qa barley ({self.war_engine.city_granary_barley/300.0:.2f} gur)")
+            print(f" Personal Estate Purse:    {self.player.wallet.silver_shekels:7.2f} silver | {self.player.wallet.barley_qa:5.0f} qa barley")
             print("-" * 78)
             print(" MUNICIPAL & MILITARY EXECUTIVE ORDERS:")
             print(" [1] Inspect City Garrison & Station Troops at City Gates")
             print(" [2] Recruit Military Regiments (Bā'iru, Rēdû, Chariots, Militia)")
             print(" [3] Arm Regiments with Manufactured Weapons from Inventory")
             print(" [4] Launch Military Campaigns & Expeditions against Hostile Threats")
-            print(" [5] Municipal Granary Famine Relief (Distribute 100 qa grain, gain Honor)")
-            print(" [6] Petition Great King Hammurabi for Royal Misharum Debt Jubilee")
+            print(" [5] Manage Municipal Coffers (Donate grain/silver for Honor, or draw dividend)")
+            print(" [6] Municipal Granary Famine Relief (Open public silos for commoners, gain Honor)")
+            print(" [7] Petition Great King Hammurabi for Royal Misharum Debt Jubilee")
             print(" [0] Return to Civic Offices Menu")
             print("-" * 78)
 
-            gov_act = input(" Select executive order [0-6]: ").strip()
+            gov_act = input(" Select executive order [0-7]: ").strip()
 
             if gov_act == "0":
                 break
@@ -1505,16 +1510,63 @@ class BabylonianGame:
                     self.advance_hours(hours_camp)
 
             elif gov_act == "5":
-                # Famine relief
-                if self.player.wallet.barley_qa < 100.0:
-                    print(" [!] You need at least 100 qa of barley in your treasury for famine relief.")
-                else:
-                    self.player.wallet.spend_barley(100.0)
-                    self.player.reputation = min(100.0, self.player.reputation + 5.0)
-                    print(" [★] You distributed 100 qa of barley from your municipal granary to destitute commoners!")
-                    print(f"     The citizens of Babylon shower blessings upon Governor {self.player.full_name}! Reputation elevated +5.0.")
+                # Manage Municipal Coffers & Granary
+                print("\n" + "=" * 78)
+                print("           MANAGE BABYLON MUNICIPAL COFFERS (BĪT ĀLĪ)")
+                print("=" * 78)
+                print(f" Public Civic Treasury: {self.war_engine.city_treasury_silver:.2f} silver shekels")
+                print(f" Public Municipal Silos:{self.war_engine.city_granary_barley:.0f} qa barley ({self.war_engine.city_granary_barley/300.0:.2f} gur)")
+                print(f" Personal Estate Purse: {self.player.wallet.silver_shekels:.2f} silver | {self.player.wallet.barley_qa:.0f} qa barley")
+                print("-" * 78)
+                print(" [1] Donate Personal Grain to Public Granary (+Honor/Praise from citizens)")
+                print(" [2] Donate Personal Silver to City Treasury (+Honor/Praise from Council of Elders)")
+                print(" [3] Draw Mayoral Administrative Dividend (Withdraw up to 30 silver from surplus)")
+                print(" [0] Return")
+                m_pick = input(" Choose action [0-3]: ").strip()
+                if m_pick == "1":
+                    amt_str = input(f" How much barley to donate (You hold: {self.player.wallet.barley_qa:.0f} qa)? ").strip()
+                    try:
+                        amt = float(amt_str)
+                        if 0 < amt <= self.player.wallet.barley_qa:
+                            self.player.wallet.spend_barley(amt)
+                            self.war_engine.city_granary_barley += amt
+                            honor_gain = round(amt / 50.0, 1)
+                            self.player.reputation = min(100.0, self.player.reputation + honor_gain)
+                            print(f" [★] Donated {amt:.0f} qa barley into public silos! Citizens chant blessings upon Governor {self.player.full_name}! (+{honor_gain} Honor)")
+                    except ValueError:
+                        pass
+                elif m_pick == "2":
+                    amt_str = input(f" How much silver to donate (You hold: {self.player.wallet.silver_shekels:.2f} silver)? ").strip()
+                    try:
+                        amt = float(amt_str)
+                        if 0 < amt <= self.player.wallet.silver_shekels:
+                            self.player.wallet.spend_silver(amt)
+                            self.war_engine.city_treasury_silver += amt
+                            honor_gain = round(amt * 0.5, 1)
+                            self.player.reputation = min(100.0, self.player.reputation + honor_gain)
+                            print(f" [★] Contributed {amt:.2f} silver shekels into the city treasury! Council of Elders commends your noble stewardship! (+{honor_gain} Honor)")
+                    except ValueError:
+                        pass
+                elif m_pick == "3":
+                    if self.war_engine.city_treasury_silver < 120.0:
+                        print(" [!] City treasury is too low (<120 silver). Council of Elders forbids drawing dividends.")
+                    else:
+                        div = min(30.0, self.war_engine.city_treasury_silver - 90.0)
+                        self.war_engine.city_treasury_silver -= div
+                        self.player.wallet.add_silver(div)
+                        print(f" [+] Collected {div:.2f} silver shekels as legitimate Mayoral Executive Dividend!")
 
             elif gov_act == "6":
+                # Famine relief from public granary
+                if self.war_engine.city_granary_barley < 100.0:
+                    print(" [!] City granary does not have enough grain (<100 qa).")
+                else:
+                    self.war_engine.city_granary_barley -= 100.0
+                    self.player.reputation = min(100.0, self.player.reputation + 5.0)
+                    print(f" [★] You opened the public granaries of Babylon, distributing 100 qa of barley to destitute citizens!")
+                    print(f"     The people of Babylon shower blessings upon Governor {self.player.full_name}! (+5.0 Honor)")
+
+            elif gov_act == "7":
                 # Royal Misharum Debt Jubilee Petition
                 pet = input(" Petition Great King Hammurabi for a Royal Misharum Debt Jubilee? (y/N): ").strip().lower()
                 if pet == "y":
@@ -1832,6 +1884,9 @@ class BabylonianGame:
             ],
             "army": {
                 "regiment_counter": self.war_engine.regiment_counter,
+                "city_treasury_silver": self.war_engine.city_treasury_silver,
+                "city_granary_barley": self.war_engine.city_granary_barley,
+                "gate_toll_revenue_daily": self.war_engine.gate_toll_revenue_daily,
                 "regiments": [
                     {
                         "id": r.id,
@@ -1954,6 +2009,9 @@ class BabylonianGame:
             if "army" in data:
                 a_data = data["army"]
                 self.war_engine.regiment_counter = a_data.get("regiment_counter", 1)
+                self.war_engine.city_treasury_silver = a_data.get("city_treasury_silver", 250.0)
+                self.war_engine.city_granary_barley = a_data.get("city_granary_barley", 3000.0)
+                self.war_engine.gate_toll_revenue_daily = a_data.get("gate_toll_revenue_daily", 1.80)
                 self.war_engine.standing_army = []
                 for r_item in a_data.get("regiments", []):
                     u_type = UnitType[r_item["unit_type"]]

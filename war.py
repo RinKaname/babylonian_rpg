@@ -346,6 +346,11 @@ class BabylonianWarEngine:
         self.standing_army: List[SoldierRegiment] = []
         self.regiment_counter = 1
         
+        # Babylon Municipal Coffers & Public Granary (Bīt Ālī)
+        self.city_treasury_silver: float = 250.0   # Civic silver reserves
+        self.city_granary_barley: float = 3000.0   # Public grain silos (10 gur = 3,000 qa)
+        self.gate_toll_revenue_daily: float = 1.80 # Daily caravan customs from 4 Great Gates
+
         # Initial starter garrison stationed at the gates
         self._initialize_starter_garrison()
 
@@ -498,21 +503,44 @@ class BabylonianWarEngine:
             total_silver += reg.definition.daily_wage_silver * reg.soldiers_count
         return total_grain, total_silver
 
-    def pay_daily_upkeep(self, player: Character) -> Tuple[bool, str]:
-        """Deducts daily garrison wages and food rations. Desertions occur if default."""
+    def pay_daily_upkeep(self, player: Optional[Character] = None) -> Tuple[bool, str]:
+        """
+        Deducts daily garrison wages and food rations from the Babylon Municipal Coffers (Bīt Ālī).
+        Incoming trade through the 4 Great Gates deposits customs tariffs daily into the civic treasury.
+        If municipal silos are empty, Mayor can subsidize or troops desert under Code §§ 26-41.
+        """
+        # 1. Inflow: Caravans & merchants pay customs tariffs into municipal treasury
+        self.city_treasury_silver += self.gate_toll_revenue_daily
+
         grain_needed, silver_needed = self.calculate_daily_upkeep()
         if not self.standing_army:
             return True, "No standing troops."
 
-        if player.wallet.silver_shekels < silver_needed or player.wallet.barley_qa < grain_needed:
-            # Desertion crisis!
-            deserted_reg = self.standing_army.pop()
-            player.reputation = max(10.0, player.reputation - 6.0)
-            return False, f" [!] Garrison Payroll Default! Could not provision troops ({silver_needed:.2f} silver, {grain_needed:.0f} qa grain). Regiment {deserted_reg.id} deserted the walls!"
+        # 2. Paid directly from Babylon Municipal Coffers & Public Granary
+        if self.city_treasury_silver >= silver_needed and self.city_granary_barley >= grain_needed:
+            self.city_treasury_silver -= silver_needed
+            self.city_granary_barley -= grain_needed
+            return True, f"[City Coffers (Bīt Ālī)] Paid garrison upkeep ({silver_needed:.2f} silv, {grain_needed:.0f} qa grain) from Municipal Treasury (Treasury: {self.city_treasury_silver:.1f} silv | Granary: {self.city_granary_barley:.0f} qa)."
 
-        player.wallet.spend_silver(silver_needed)
-        player.wallet.spend_barley(grain_needed)
-        return True, f"[Upkeep] Paid {silver_needed:.2f} silver and {grain_needed:.0f} qa barley to garrison."
+        # 3. Deficit handling: Check if Mayor can/wants to subsidize from personal funds
+        deficit_silver = max(0.0, silver_needed - self.city_treasury_silver)
+        deficit_grain = max(0.0, grain_needed - self.city_granary_barley)
+
+        if player and player.wallet.silver_shekels >= deficit_silver and player.wallet.barley_qa >= deficit_grain:
+            self.city_treasury_silver = max(0.0, self.city_treasury_silver - silver_needed)
+            self.city_granary_barley = max(0.0, self.city_granary_barley - grain_needed)
+            if deficit_silver > 0:
+                player.wallet.spend_silver(deficit_silver)
+            if deficit_grain > 0:
+                player.wallet.spend_barley(deficit_grain)
+            player.reputation = min(100.0, player.reputation + 2.0)
+            return True, f"[Mayoral Emergency Subsidy] City silos were short! Governor {player.full_name} subsidized {deficit_silver:.2f} silver and {deficit_grain:.0f} qa grain (+2.0 Honor)."
+
+        # 4. Desertion crisis if both city coffers and player cannot provide
+        deserted_reg = self.standing_army.pop()
+        if player:
+            player.reputation = max(10.0, player.reputation - 6.0)
+        return False, f" [!] Municipal Granary Empty! City granary holds {self.city_granary_barley:.0f} qa (needed {grain_needed:.0f} qa). Regiment {deserted_reg.id} deserted the walls!"
 
     # --------------------------------------------------------------------------
     # Military Campaigns & Expeditions
