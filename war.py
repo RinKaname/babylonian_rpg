@@ -398,13 +398,18 @@ class BabylonianWarEngine:
         total_silver = u_def.recruitment_cost_silver * count
         total_grain = u_def.daily_fodder_grain_qa * count * 3.0  # 3 days starting rations
 
-        if player.wallet.silver_shekels < total_silver:
-            return False, f"Cannot afford recruitment: needs {total_silver:.2f} silver (Have: {player.wallet.silver_shekels:.2f})."
-        if player.wallet.barley_qa < total_grain:
-            return False, f"Insufficient starting grain rations: needs {total_grain:.0f} qa (Have: {player.wallet.barley_qa:.0f} qa)."
-
-        player.wallet.spend_silver(total_silver)
-        player.wallet.spend_barley(total_grain)
+        paid_from_city = False
+        if self.city_treasury_silver >= total_silver and self.city_granary_barley >= total_grain:
+            self.city_treasury_silver -= total_silver
+            self.city_granary_barley -= total_grain
+            paid_from_city = True
+        else:
+            if player.wallet.silver_shekels < total_silver:
+                return False, f"Cannot afford recruitment: needs {total_silver:.2f} silver (City: {self.city_treasury_silver:.1f}, Player: {player.wallet.silver_shekels:.2f})."
+            if player.wallet.barley_qa < total_grain:
+                return False, f"Insufficient starting grain rations: needs {total_grain:.0f} qa (City: {self.city_granary_barley:.0f}, Player: {player.wallet.barley_qa:.0f})."
+            player.wallet.spend_silver(total_silver)
+            player.wallet.spend_barley(total_grain)
 
         reg_id = f"reg_{self.regiment_counter:03d}"
         self.regiment_counter += 1

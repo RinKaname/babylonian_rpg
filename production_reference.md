@@ -9,15 +9,22 @@
 
 | Production Line | Action / Good Produced | Inputs per Batch | Output Yield per Batch | Base Time | Energy Cost | Primary Skill / Benefit |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Brewery** | Barley Beer (*šikaru*) | 5.0 qa Barley | 4 Jars Beer | 3.0h | 8–12% | Craftsmanship / Hydration |
-| **Bakery** | Barley Flatbread (*akalu*) | 3.0 qa Barley | 4 Loaves Bread | 2.0h | 8–12% | Craftsmanship / Satiety |
-| **Weaver's Loom** | Woolen Cloth (*subātu*) | 4.0 Talents Raw Wool | 2 Bolts Woolen Cloth | 4.0h | 8–12% | Prime Export / Currency |
-| **Foundry** | Bronze Tools (*niggallu*) | 2 Copper Ore + 0.2 Tin | 3 Bronze Tools | 5.0h | 8–12% | Chariot input / Trade |
-| **Weaponsmith** | Bronze Weapons (*kakku*) | 3 Copper Ore + 0.3 Tin | 2 Bronze Weapons | 5.0h | 8–12% | Arms Rēdû Heavy Spearmen |
-| **Bowyer** | Composite Bow (*qaštu*) | 2 Timber + 2 Raw Wool | 1 Composite Bow | 4.5h | 8–12% | Arms Bā'iru Skirmishers |
-| **Chariot Guild** | War Chariot (*narkabtu*) | 4 Timber + 1 Bronze Tools | 1 Spoked War Chariot | 8.0h | 8–12% | Arms Narkabtu Charioteers |
-| **Brickyard** | Mudbricks (*libittu*) | 2 Marsh Reeds | 5 Sun-Dried Mudbricks | 2.5h | 8–12% | Construction / Export |
-| **Lapidary** | Royal Gold Mount Seal | 20.0 Silver Shekels | +4 Seal Prestige | 4.0h | 15% | Unlocks Governor Magistracy |
+| **[1] Barley Brewery** | Barley Beer (*šikaru*) | 5.0 qa Barley | 4 Jars Beer | 3.0h | 8–12% | Everyday Hydration / Thirst -50 |
+| **[2] Spelt Brewery** | Golden Spelt Beer (*ulušinnu*) | 4.0 Emmer Wheat | 3 Jars Spelt Beer | 3.5h | 8–12% | Luxury Banquets / Thirst -60 |
+| **[3] Bakery** | Barley Flatbread (*akalu*) | 3.0 qa Barley | 4 Loaves Flatbread | 2.0h | 8–12% | Staple Food / Hunger -45 |
+| **[4] Pastry Chef** | Honey-Date Pastries (*mersu*) | 2 Dates + 2 Emmer/Barley | 3 Date Pastries | 2.0h | 8–12% | Temple Delicacy / Honor +0.5 |
+| **[5] Wool Loom** | Woolen Cloth (*subātu*) | 4.0 Talents Raw Wool | 2 Bolts Cloth | 4.0h | 8–12% | Prime Babylonian Export |
+| **[6] Linen Loom** | Bleached Linen Tunic (*kitû*) | 2.0 Flax Fiber | 1 Fine Linen Tunic | 4.0h | 8–12% | Patrician Splendor / Honor +3.0 |
+| **[7] Oil Press** | Refined Sesame Oil (*ellu*) | 3.0 Sesame Seeds | 2 Jars Sesame Oil | 2.5h | 8–12% | Cooking Oil & Perfume Base |
+| **[8] Perfumery** | Sacred Perfume (*ruqqû*) | 1 Sesame Oil + 1 Spice | 1 Flacon Perfume | 4.0h | 8–12% | Anointing / Honor +2.0 (High Resale!) |
+| **[9] Bronze Foundry**| Bronze Tools (*niggallu*) | 2 Copper Ore + 0.2 Tin | 3 Bronze Tools | 5.0h | 8–12% | Winter Shortage Money Printer |
+| **[10] Weaponsmith** | Bronze Weapons (*kakku*) | 3 Copper Ore + 0.3 Tin | 2 Bronze Weapons | 5.0h | 8–12% | Arms Rēdû Heavy Spearmen |
+| **[11] Bowyer** | Composite Bow (*qaštu*) | 2 Timber + 2 Raw Wool | 1 Composite Bow | 4.5h | 8–12% | Arms Bā'iru Archers |
+| **[12] Chariot Guild**| War Chariot (*narkabtu*) | 4 Timber + 1 Bronze Tools | 1 War Chariot | 8.0h | 8–12% | Arms Narkabtu Shock Chariots |
+| **[13] Brickyard** | Sun-Dried Mudbricks (*libittu*)| 2 Marsh Reeds | 5 Mudbricks | 2.5h | 8–12% | Alluvial Masonry |
+| **[14] Potter's Kiln**| Clay Vessels (*karpatu*) | 2 Reeds or Dung Fuel | 4 Clay Vessels | 2.5h | 8–12% | Food Storage & Rations |
+| **[15] Seal Engraver**| Carved Cylinder Seal (*kunukku*)| 1 Bronze Tools + 2 Silv | 1 Cylinder Seal | 5.0h | 8–12% | Legal Seals & High Resale |
+| **[16] Royal Lapidary**| Gold-Mounted Filigree | 20.0 Silver Shekels | +4 Seal Prestige | 4.0h | 15% | Unlocks City Governor Office |
 | **Autumn Farm** | Sowing & Plowing | 10.0 qa Barley / Acre | Fields Sowed | 6.0h | 30% | Agriculture Skill (+1) |
 | **Winter Farm** | Canal Silt Dredging | *None* | Canals Cleared | 6.0h | 25% | Agriculture Skill (+1) |
 | **Spring Farm** | The Great Harvest | *None* (Harvests fields) | 250–380 qa/Acre (+Oxen) | 8.0h | 45% | Massive Barley Yield |

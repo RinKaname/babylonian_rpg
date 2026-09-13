@@ -654,17 +654,300 @@ class BabylonianGame:
             print(f" Labor Force:       {self.hired_artisans} Hired Artisan(s) ({staff_status})")
             print(f" Wage Policy:       {wage_info['name']} ({daily_wage_silver:.3f} silver/day/worker | CPI {cpi:.3f}x)")
             print(f" Current Time:      Day {self.day:02d}/{self.days_per_season} | {time_str} ({self.get_time_label()}) | Energy: {self.player.energy:.0f}%")
+            RECIPES = {
+                "1": {
+                    "name": "Barley Beer (šikaru)",
+                    "category": "Brewery",
+                    "inputs": {"barley": 5.0},
+                    "input_desc": "5 qa Barley",
+                    "output_key": "barley_beer",
+                    "yield": 4.0,
+                    "output_desc": "4 Jars Barley Beer",
+                    "base_hours": 3.0,
+                    "skill_bonus": 1
+                },
+                "2": {
+                    "name": "Golden Spelt Beer (ulušinnu)",
+                    "category": "Spelt Brewery",
+                    "inputs": {"emmer": 4.0},
+                    "input_desc": "4 Emmer Wheat",
+                    "output_key": "spelt_beer",
+                    "yield": 3.0,
+                    "output_desc": "3 Jars Spelt Beer",
+                    "base_hours": 3.5,
+                    "skill_bonus": 1
+                },
+                "3": {
+                    "name": "Barley Flatbread (akalu)",
+                    "category": "Bakery",
+                    "inputs": {"barley": 3.0},
+                    "input_desc": "3 qa Barley",
+                    "output_key": "bread",
+                    "yield": 4.0,
+                    "output_desc": "4 Loaves Flatbread",
+                    "base_hours": 2.0,
+                    "skill_bonus": 1
+                },
+                "4": {
+                    "name": "Honey-Date Pastries (mersu)",
+                    "category": "Confectionery",
+                    "inputs": {"dates": 2.0, "grain_or_flour": 2.0},
+                    "input_desc": "2 Dates + 2 Emmer/Barley",
+                    "output_key": "sweet_pastry",
+                    "yield": 3.0,
+                    "output_desc": "3 Date Pastries",
+                    "base_hours": 2.0,
+                    "skill_bonus": 1
+                },
+                "5": {
+                    "name": "Standard Woolen Cloth (subātu)",
+                    "category": "Wool Loom",
+                    "inputs": {"wool": 4.0},
+                    "input_desc": "4 Talents Raw Wool",
+                    "output_key": "woolen_cloth",
+                    "yield": 2.0,
+                    "output_desc": "2 Bolts Woolen Cloth",
+                    "base_hours": 4.0,
+                    "skill_bonus": 1
+                },
+                "6": {
+                    "name": "Bleached Linen Tunic (kitû)",
+                    "category": "Linen Loom",
+                    "inputs": {"flax": 2.0},
+                    "input_desc": "2 Flax Fiber",
+                    "output_key": "fine_linen",
+                    "yield": 1.0,
+                    "output_desc": "1 Fine Linen Tunic",
+                    "base_hours": 4.0,
+                    "skill_bonus": 1
+                },
+                "7": {
+                    "name": "Refined Sesame Oil (ellu)",
+                    "category": "Oil Press",
+                    "inputs": {"sesame": 3.0},
+                    "input_desc": "3 Sesame Seeds",
+                    "output_key": "sesame_oil",
+                    "yield": 2.0,
+                    "output_desc": "2 Jars Sesame Oil",
+                    "base_hours": 2.5,
+                    "skill_bonus": 1
+                },
+                "8": {
+                    "name": "Sacred Perfume & Unguents (ruqqû)",
+                    "category": "Perfumery",
+                    "inputs": {"sesame_oil": 1.0, "spice": 1.0},
+                    "input_desc": "1 Sesame Oil + 1 Cress/Mustard",
+                    "output_key": "perfume",
+                    "yield": 1.0,
+                    "output_desc": "1 Flacon Sacred Perfume",
+                    "base_hours": 4.0,
+                    "skill_bonus": 2
+                },
+                "9": {
+                    "name": "Bronze Plows & Sickles (niggallu)",
+                    "category": "Foundry",
+                    "inputs": {"copper_ore": 2.0, "tin": 0.2},
+                    "input_desc": "2 Copper Ore + 0.2 Tin",
+                    "output_key": "bronze_tools",
+                    "yield": 3.0,
+                    "output_desc": "3 Bronze Tools",
+                    "base_hours": 5.0,
+                    "skill_bonus": 1
+                },
+                "10": {
+                    "name": "Bronze Spears & Battle-Axes (kakku)",
+                    "category": "Weaponsmith",
+                    "inputs": {"copper_ore": 3.0, "tin": 0.3},
+                    "input_desc": "3 Copper Ore + 0.3 Tin",
+                    "output_key": "bronze_weapons",
+                    "yield": 2.0,
+                    "output_desc": "2 Bronze Weapons",
+                    "base_hours": 5.0,
+                    "skill_bonus": 1
+                },
+                "11": {
+                    "name": "Laminated Composite Bow (qaštu)",
+                    "category": "Bowyer",
+                    "inputs": {"timber": 2.0, "wool": 2.0},
+                    "input_desc": "2 Timber + 2 Raw Wool/Sinew",
+                    "output_key": "composite_bow",
+                    "yield": 1.0,
+                    "output_desc": "1 Composite Bow",
+                    "base_hours": 4.5,
+                    "skill_bonus": 1
+                },
+                "12": {
+                    "name": "Spoked War Chariot (narkabtu)",
+                    "category": "Chariot Guild",
+                    "inputs": {"timber": 4.0, "bronze_tools": 1.0},
+                    "input_desc": "4 Timber + 1 Bronze Tools",
+                    "output_key": "war_chariot",
+                    "yield": 1.0,
+                    "output_desc": "1 War Chariot",
+                    "base_hours": 8.0,
+                    "skill_bonus": 2
+                },
+                "13": {
+                    "name": "Sun-Dried Mudbrick (libittu)",
+                    "category": "Brickyard",
+                    "inputs": {"reeds": 2.0},
+                    "input_desc": "2 Marsh Reeds",
+                    "output_key": "mudbrick",
+                    "yield": 5.0,
+                    "output_desc": "5 Mudbricks",
+                    "base_hours": 2.5,
+                    "skill_bonus": 1
+                },
+                "14": {
+                    "name": "Clay Bowls & Jars (karpatu)",
+                    "category": "Potter's Kiln",
+                    "inputs": {"pottery_fuel": 2.0},
+                    "input_desc": "2 Reeds or Dung Fuel",
+                    "output_key": "pottery",
+                    "yield": 4.0,
+                    "output_desc": "4 Clay Vessels",
+                    "base_hours": 2.5,
+                    "skill_bonus": 1
+                },
+                "15": {
+                    "name": "Carved Cylinder Seal (kunukku)",
+                    "category": "Seal Engraver",
+                    "inputs": {"bronze_tools": 1.0, "silver": 2.0},
+                    "input_desc": "1 Bronze Tools + 2.0 Silver Stone",
+                    "output_key": "cylinder_seal",
+                    "yield": 1.0,
+                    "output_desc": "1 Carved Cylinder Seal",
+                    "base_hours": 5.0,
+                    "skill_bonus": 2
+                }
+            }
+
+            def get_avail(item_key):
+                if item_key == "barley":
+                    return self.player.wallet.barley_qa
+                elif item_key == "wool":
+                    return self.player.inventory.get("raw_wool", 0.0) + self.player.inventory.get("wool", 0.0)
+                elif item_key == "reeds":
+                    return self.player.inventory.get("reeds", 0.0) + self.player.inventory.get("reed", 0.0)
+                elif item_key == "grain_or_flour":
+                    return self.player.inventory.get("emmer", 0.0) + self.player.wallet.barley_qa
+                elif item_key == "spice":
+                    return self.player.inventory.get("cress", 0.0) + self.player.inventory.get("mustard", 0.0)
+                elif item_key == "pottery_fuel":
+                    return self.player.inventory.get("reeds", 0.0) + self.player.inventory.get("reed", 0.0) + self.player.inventory.get("animal_dung", 0.0)
+                elif item_key == "silver":
+                    return self.player.wallet.silver_shekels
+                else:
+                    return self.player.inventory.get(item_key, 0.0)
+
+            def spend_item(item_key, amount):
+                if item_key == "barley":
+                    self.player.wallet.spend_barley(amount)
+                    self.player.inventory["barley"] = self.player.wallet.barley_qa
+                    if self.player.inventory["barley"] <= 0:
+                        self.player.inventory.pop("barley", None)
+                elif item_key == "wool":
+                    rem = amount
+                    have_raw = self.player.inventory.get("raw_wool", 0.0)
+                    spend_raw = min(have_raw, rem)
+                    self.player.inventory["raw_wool"] = have_raw - spend_raw
+                    rem -= spend_raw
+                    if self.player.inventory.get("raw_wool", 0.0) <= 1e-4:
+                        self.player.inventory.pop("raw_wool", None)
+                    if rem > 0:
+                        have_w = self.player.inventory.get("wool", 0.0)
+                        self.player.inventory["wool"] = max(0.0, have_w - rem)
+                        if self.player.inventory.get("wool", 0.0) <= 1e-4:
+                            self.player.inventory.pop("wool", None)
+                elif item_key == "reeds":
+                    rem = amount
+                    have_r = self.player.inventory.get("reeds", 0.0)
+                    spend_r = min(have_r, rem)
+                    self.player.inventory["reeds"] = have_r - spend_r
+                    rem -= spend_r
+                    if self.player.inventory.get("reeds", 0.0) <= 1e-4:
+                        self.player.inventory.pop("reeds", None)
+                    if rem > 0:
+                        have_rd = self.player.inventory.get("reed", 0.0)
+                        self.player.inventory["reed"] = max(0.0, have_rd - rem)
+                        if self.player.inventory.get("reed", 0.0) <= 1e-4:
+                            self.player.inventory.pop("reed", None)
+                elif item_key == "grain_or_flour":
+                    rem = amount
+                    have_emmer = self.player.inventory.get("emmer", 0.0)
+                    spend_emmer = min(have_emmer, rem)
+                    self.player.inventory["emmer"] = have_emmer - spend_emmer
+                    rem -= spend_emmer
+                    if self.player.inventory.get("emmer", 0.0) <= 1e-4:
+                        self.player.inventory.pop("emmer", None)
+                    if rem > 0:
+                        self.player.wallet.spend_barley(rem)
+                        self.player.inventory["barley"] = self.player.wallet.barley_qa
+                        if self.player.inventory["barley"] <= 0:
+                            self.player.inventory.pop("barley", None)
+                elif item_key == "spice":
+                    rem = amount
+                    have_cress = self.player.inventory.get("cress", 0.0)
+                    spend_cress = min(have_cress, rem)
+                    self.player.inventory["cress"] = have_cress - spend_cress
+                    rem -= spend_cress
+                    if self.player.inventory.get("cress", 0.0) <= 1e-4:
+                        self.player.inventory.pop("cress", None)
+                    if rem > 0:
+                        have_mustard = self.player.inventory.get("mustard", 0.0)
+                        self.player.inventory["mustard"] = max(0.0, have_mustard - rem)
+                        if self.player.inventory.get("mustard", 0.0) <= 1e-4:
+                            self.player.inventory.pop("mustard", None)
+                elif item_key == "pottery_fuel":
+                    rem = amount
+                    have_reeds = self.player.inventory.get("reeds", 0.0) + self.player.inventory.get("reed", 0.0)
+                    spend_reeds = min(have_reeds, rem)
+                    if spend_reeds > 0:
+                        r_avail = self.player.inventory.get("reeds", 0.0)
+                        s_r = min(r_avail, spend_reeds)
+                        self.player.inventory["reeds"] = r_avail - s_r
+                        if self.player.inventory.get("reeds", 0.0) <= 1e-4:
+                            self.player.inventory.pop("reeds", None)
+                        rem_r = spend_reeds - s_r
+                        if rem_r > 0:
+                            self.player.inventory["reed"] = max(0.0, self.player.inventory.get("reed", 0.0) - rem_r)
+                            if self.player.inventory.get("reed", 0.0) <= 1e-4:
+                                self.player.inventory.pop("reed", None)
+                    rem -= spend_reeds
+                    if rem > 0:
+                        have_dung = self.player.inventory.get("animal_dung", 0.0)
+                        self.player.inventory["animal_dung"] = max(0.0, have_dung - rem)
+                        if self.player.inventory.get("animal_dung", 0.0) <= 1e-4:
+                            self.player.inventory.pop("animal_dung", None)
+                elif item_key == "silver":
+                    self.player.wallet.spend_silver(amount)
+                else:
+                    self.player.inventory[item_key] = max(0.0, self.player.inventory.get(item_key, 0.0) - amount)
+                    if self.player.inventory.get(item_key, 0.0) <= 1e-4:
+                        self.player.inventory.pop(item_key, None)
+
             print("-" * 75)
             print(" PRODUCTION & FORGING RECIPES:")
-            print(" [1] Brewery:      Mash 5 qa Barley           -> 4 Jars Barley Beer    (Base: 3.0h)")
-            print(" [2] Bakery:       Bake 3 qa Barley           -> 4 Loaves Flatbread    (Base: 2.0h)")
-            print(" [3] Loom:         Weave 4 Talents Raw Wool   -> 2 Bolts Woolen Cloth  (Base: 4.0h)")
-            print(" [4] Bronze Tools: 2 Copper Ore + 0.2 Tin     -> 3 Bronze Tools        (Base: 5.0h)")
-            print(" [5] Weaponsmith:  3 Copper Ore + 0.3 Tin     -> 2 Bronze Weapons      (Base: 5.0h)")
-            print(" [6] Bowyer:       2 Timber + 2 Raw Wool      -> 1 Composite Bow       (Base: 4.5h)")
-            print(" [7] Chariot Guild:4 Timber + 1 Bronze Tools  -> 1 War Chariot         (Base: 8.0h)")
-            print(" [8] Brickyard:    2 Reeds + River Silt       -> 5 Mudbricks           (Base: 2.5h)")
-            print(" [9] Lapidary:     Mount Seal in Gold Caps    -> +4 Seal Prestige      (Cost: 20.0 Silver)")
+            print(" --- BREWERY, BAKERY & CONFECTIONERY ---")
+            print(" [1]  Barley Brewery:  5 qa Barley            -> 4 Jars Barley Beer    (Base: 3.0h)")
+            print(" [2]  Spelt Brewery:   4 Emmer Wheat          -> 3 Jars Spelt Beer     (Base: 3.5h)")
+            print(" [3]  Bakery:          3 qa Barley            -> 4 Loaves Flatbread    (Base: 2.0h)")
+            print(" [4]  Pastry Chef:     2 Dates + 2 Emmer/Barley-> 3 Honey Pastries      (Base: 2.0h)")
+            print(" --- TEXTILE LOOMS, OILS & PERFUMERY ---")
+            print(" [5]  Wool Loom:       4 Talents Raw Wool     -> 2 Bolts Woolen Cloth  (Base: 4.0h)")
+            print(" [6]  Linen Loom:      2 Flax Fiber           -> 1 Bleached Linen Tunic(Base: 4.0h)")
+            print(" [7]  Oil Press:       3 Sesame Seeds         -> 2 Jars Sesame Oil     (Base: 2.5h)")
+            print(" [8]  Perfumery:       1 Sesame Oil + 1 Spice -> 1 Sacred Perfume      (Base: 4.0h)")
+            print(" --- FOUNDRY, WEAPONSMITHING & MILITARY ---")
+            print(" [9]  Bronze Tools:    2 Copper Ore + 0.2 Tin -> 3 Bronze Tools        (Base: 5.0h)")
+            print(" [10] Weaponsmith:     3 Copper Ore + 0.3 Tin -> 2 Bronze Weapons      (Base: 5.0h)")
+            print(" [11] Bowyer & Fletcher:2 Timber + 2 Raw Wool -> 1 Composite Bow       (Base: 4.5h)")
+            print(" [12] Chariot Guild:   4 Timber + 1 Tools     -> 1 War Chariot         (Base: 8.0h)")
+            print(" --- MASONRY, CERAMICS & LAPIDARY ---")
+            print(" [13] Brickyard:       2 Reeds                -> 5 Mudbricks           (Base: 2.5h)")
+            print(" [14] Potter's Kiln:   2 Reeds or Dung        -> 4 Clay Vessels        (Base: 2.5h)")
+            print(" [15] Seal Engraver:   1 Bronze Tools + 2 Silv-> 1 Cylinder Seal       (Base: 5.0h)")
+            print(" [16] Royal Lapidary:  Mount Seal in Gold Caps-> +4 Seal Prestige      (Cost: 20.0 Silv)")
             print("-" * 75)
             print(" WORKSHOP MANAGEMENT & ECONOMIES OF SCALE:")
             print(" [U] Upgrade Workshop Facility Tier (Expand batch capacity & labor scale)")
@@ -673,97 +956,27 @@ class BabylonianGame:
             print(" [0] Return to Agriculture & Land Menu")
             print("-" * 75)
 
-            craft_act = input(" Choose workshop action [0-9, U, H, W]: ").strip()
+            craft_act = input(" Choose workshop action [1-16, U, H, W, 0]: ").strip()
 
             if craft_act == "0":
                 break
 
-            elif craft_act in ["1", "2", "3", "4", "5", "6", "7", "8"]:
+            elif craft_act in RECIPES:
+                recipe = RECIPES[craft_act]
+                recipe_name = recipe["name"]
+                unit_in = recipe["input_desc"]
+                unit_out = recipe["output_desc"]
+                base_hours = recipe["base_hours"]
+                output_key = recipe["output_key"]
+                yield_per_batch = recipe["yield"]
+
                 # Calculate max batches possible based on inventory
-                if craft_act == "1":  # Brewery: 5 barley -> 4 beer
-                    barley_avail = self.player.wallet.barley_qa
-                    max_possible = int(barley_avail // 5.0)
-                    recipe_name = "Barley Beer"
-                    unit_in = "5 qa Barley"
-                    unit_out = "4 Jars Beer"
-                    base_hours = 3.0
-                    output_key = "barley_beer"
-                    yield_per_batch = 4.0
-                elif craft_act == "2":  # Bakery: 3 barley -> 4 bread
-                    barley_avail = self.player.wallet.barley_qa
-                    max_possible = int(barley_avail // 3.0)
-                    recipe_name = "Barley Flatbread"
-                    unit_in = "3 qa Barley"
-                    unit_out = "4 Loaves Bread"
-                    base_hours = 2.0
-                    output_key = "bread"
-                    yield_per_batch = 4.0
-                elif craft_act == "3":  # Loom: 4 wool -> 2 cloth
-                    wool_avail = self.player.inventory.get("raw_wool", 0.0) + self.player.inventory.get("wool", 0.0)
-                    max_possible = int(wool_avail // 4.0)
-                    recipe_name = "Woolen Cloth"
-                    unit_in = "4 Talents Raw Wool"
-                    unit_out = "2 Bolts Woolen Cloth"
-                    base_hours = 4.0
-                    output_key = "woolen_cloth"
-                    yield_per_batch = 2.0
-                elif craft_act == "4":  # Bronze Tools: 2 copper + 0.2 tin -> 3 tools
-                    cop_avail = self.player.inventory.get("copper_ore", 0.0)
-                    tin_avail = self.player.inventory.get("tin", 0.0)
-                    max_by_cop = int(cop_avail // 2.0)
-                    max_by_tin = int(tin_avail // 0.2)
-                    max_possible = min(max_by_cop, max_by_tin)
-                    recipe_name = "Bronze Tools"
-                    unit_in = "2 Copper + 0.2 Tin"
-                    unit_out = "3 Bronze Tools"
-                    base_hours = 5.0
-                    output_key = "bronze_tools"
-                    yield_per_batch = 3.0
-                elif craft_act == "5":  # Weaponsmith: 3 copper + 0.3 tin -> 2 bronze weapons
-                    cop_avail = self.player.inventory.get("copper_ore", 0.0)
-                    tin_avail = self.player.inventory.get("tin", 0.0)
-                    max_by_cop = int(cop_avail // 3.0)
-                    max_by_tin = int(tin_avail // 0.3)
-                    max_possible = min(max_by_cop, max_by_tin)
-                    recipe_name = "Bronze Spears & Battle-Axes"
-                    unit_in = "3 Copper Ore + 0.3 Tin"
-                    unit_out = "2 Bronze Weapons (kakku)"
-                    base_hours = 5.0
-                    output_key = "bronze_weapons"
-                    yield_per_batch = 2.0
-                elif craft_act == "6":  # Bowyer: 2 timber + 2 wool -> 1 composite bow
-                    timber_avail = self.player.inventory.get("timber", 0.0)
-                    wool_avail = self.player.inventory.get("raw_wool", 0.0) + self.player.inventory.get("wool", 0.0)
-                    max_by_timber = int(timber_avail // 2.0)
-                    max_by_wool = int(wool_avail // 2.0)
-                    max_possible = min(max_by_timber, max_by_wool)
-                    recipe_name = "Composite Bow"
-                    unit_in = "2 Timber + 2 Raw Wool/Sinew"
-                    unit_out = "1 Composite Bow (qaštu)"
-                    base_hours = 4.5
-                    output_key = "composite_bow"
-                    yield_per_batch = 1.0
-                elif craft_act == "7":  # Chariot Guild: 4 timber + 1 bronze tools -> 1 war chariot
-                    timber_avail = self.player.inventory.get("timber", 0.0)
-                    tools_avail = self.player.inventory.get("bronze_tools", 0.0)
-                    max_by_timber = int(timber_avail // 4.0)
-                    max_by_tools = int(tools_avail // 1.0)
-                    max_possible = min(max_by_timber, max_by_tools)
-                    recipe_name = "Spoked War Chariot"
-                    unit_in = "4 Timber + 1 Bronze Tools"
-                    unit_out = "1 War Chariot (narkabtu)"
-                    base_hours = 8.0
-                    output_key = "war_chariot"
-                    yield_per_batch = 1.0
-                elif craft_act == "8":  # Brickyard: 2 reed -> 5 bricks
-                    reed_avail = self.player.inventory.get("reeds", 0.0) + self.player.inventory.get("reed", 0.0)
-                    max_possible = int(reed_avail // 2.0)
-                    recipe_name = "Mudbricks"
-                    unit_in = "2 Marsh Reeds"
-                    unit_out = "5 Mudbricks (libittu)"
-                    base_hours = 2.5
-                    output_key = "mudbrick"
-                    yield_per_batch = 5.0
+                max_possible = 999999
+                for ing_key, ing_qty in recipe["inputs"].items():
+                    avail_qty = get_avail(ing_key)
+                    possible_with_ing = int(avail_qty // ing_qty)
+                    if possible_with_ing < max_possible:
+                        max_possible = possible_with_ing
 
                 if max_possible <= 0:
                     print(f"\n [!] Insufficient raw materials to craft even 1 batch of {recipe_name} (Requires: {unit_in}).")
@@ -808,77 +1021,13 @@ class BabylonianGame:
                 total_yield = n_batches * yield_per_batch
 
                 # Deduct materials
-                if craft_act in ["1", "2"]:
-                    barley_to_spend = (5.0 if craft_act == "1" else 3.0) * n_batches
-                    self.player.wallet.spend_barley(barley_to_spend)
-                    self.player.inventory["barley"] = self.player.wallet.barley_qa
-                    if self.player.inventory["barley"] <= 0:
-                        del self.player.inventory["barley"]
-                elif craft_act == "3":
-                    needed_wool = 4.0 * n_batches
-                    if self.player.inventory.get("raw_wool", 0.0) >= needed_wool:
-                        self.player.inventory["raw_wool"] -= needed_wool
-                    else:
-                        needed_wool -= self.player.inventory.get("raw_wool", 0.0)
-                        self.player.inventory["raw_wool"] = 0.0
-                        self.player.inventory["wool"] -= needed_wool
-                    if self.player.inventory.get("raw_wool", 0.0) <= 1e-4 and "raw_wool" in self.player.inventory:
-                        del self.player.inventory["raw_wool"]
-                    if self.player.inventory.get("wool", 0.0) <= 1e-4 and "wool" in self.player.inventory:
-                        del self.player.inventory["wool"]
-                elif craft_act == "4":
-                    self.player.inventory["copper_ore"] -= 2.0 * n_batches
-                    self.player.inventory["tin"] -= 0.2 * n_batches
-                    if self.player.inventory["copper_ore"] <= 1e-4:
-                        del self.player.inventory["copper_ore"]
-                    if self.player.inventory["tin"] <= 1e-4:
-                        del self.player.inventory["tin"]
-                elif craft_act == "5":
-                    self.player.inventory["copper_ore"] -= 3.0 * n_batches
-                    self.player.inventory["tin"] -= 0.3 * n_batches
-                    if self.player.inventory["copper_ore"] <= 1e-4:
-                        del self.player.inventory["copper_ore"]
-                    if self.player.inventory["tin"] <= 1e-4:
-                        del self.player.inventory["tin"]
-                elif craft_act == "6":
-                    self.player.inventory["timber"] -= 2.0 * n_batches
-                    if self.player.inventory["timber"] <= 1e-4:
-                        del self.player.inventory["timber"]
-                    needed_wool = 2.0 * n_batches
-                    if self.player.inventory.get("raw_wool", 0.0) >= needed_wool:
-                        self.player.inventory["raw_wool"] -= needed_wool
-                    else:
-                        needed_wool -= self.player.inventory.get("raw_wool", 0.0)
-                        self.player.inventory["raw_wool"] = 0.0
-                        self.player.inventory["wool"] -= needed_wool
-                    if self.player.inventory.get("raw_wool", 0.0) <= 1e-4 and "raw_wool" in self.player.inventory:
-                        del self.player.inventory["raw_wool"]
-                    if self.player.inventory.get("wool", 0.0) <= 1e-4 and "wool" in self.player.inventory:
-                        del self.player.inventory["wool"]
-                elif craft_act == "7":
-                    self.player.inventory["timber"] -= 4.0 * n_batches
-                    self.player.inventory["bronze_tools"] -= 1.0 * n_batches
-                    if self.player.inventory["timber"] <= 1e-4:
-                        del self.player.inventory["timber"]
-                    if self.player.inventory["bronze_tools"] <= 1e-4:
-                        del self.player.inventory["bronze_tools"]
-                elif craft_act == "8":
-                    needed_reeds = 2.0 * n_batches
-                    if self.player.inventory.get("reeds", 0.0) >= needed_reeds:
-                        self.player.inventory["reeds"] -= needed_reeds
-                    else:
-                        needed_reeds -= self.player.inventory.get("reeds", 0.0)
-                        self.player.inventory["reeds"] = 0.0
-                        self.player.inventory["reed"] -= needed_reeds
-                    if self.player.inventory.get("reeds", 0.0) <= 1e-4 and "reeds" in self.player.inventory:
-                        del self.player.inventory["reeds"]
-                    if self.player.inventory.get("reed", 0.0) <= 1e-4 and "reed" in self.player.inventory:
-                        del self.player.inventory["reed"]
+                for ing_key, ing_qty in recipe["inputs"].items():
+                    spend_item(ing_key, ing_qty * n_batches)
 
                 # Add finished output
                 self.player.inventory[output_key] = self.player.inventory.get(output_key, 0.0) + total_yield
                 self.player.energy = max(0.0, self.player.energy - energy_needed)
-                self.player.skills.craftsmanship += max(1, n_batches // 2)
+                self.player.skills.craftsmanship += max(1, (n_batches * recipe.get("skill_bonus", 1)) // 2)
 
                 # Time advances
                 self.advance_hours(hours_needed)
@@ -889,7 +1038,7 @@ class BabylonianGame:
                 print(f"     Time elapsed: {hours_needed:.1f} hours. Current time: Day {self.day:02d} | {new_h:02d}:{new_m:02d} ({self.get_time_label()}).")
                 print(f"     Remaining energy: {self.player.energy:.0f}%.")
 
-            elif craft_act == "9":
+            elif craft_act == "16":
                 if not self.player.cylinder_seal:
                     print(" [!] You have no cylinder seal to embellish!")
                 elif "Gold-Mounted" in self.player.cylinder_seal.material:
@@ -1141,7 +1290,10 @@ class BabylonianGame:
                 ("barley", "Toasted Barley Grains (1 qa)", "Hunger -25, Energy +5"),
                 ("barley_beer", "Jug of Cloudy Barley Beer", "Thirst -50, Energy +25"),
                 ("spelt_beer", "Golden Spelt Beer", "Thirst -60, Energy +30"),
-                ("date_wine", "Flask of Fermented Date Wine", "Thirst -60, Health +15, Energy +30")
+                ("date_wine", "Flask of Fermented Date Wine", "Thirst -60, Health +15, Energy +30"),
+                ("sesame_oil", "Sip of Refined Sesame Oil", "Hunger -20, Energy +10"),
+                ("fine_linen", "Don Bleached Linen Patrician Tunic", "Honor +3.0 (Noble Splendor)"),
+                ("perfume", "Anoint with Sacred Frankincense Perfume", "Honor +2.0 (Divine Reverence)")
             ]
 
             avail = []

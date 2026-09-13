@@ -386,6 +386,16 @@ class Character:
             self.health = min(100.0, self.health + 10.0)
             self.reputation = min(100.0, self.reputation + 0.5)
             return True, "You indulged in honey-glazed temple pastry! (Hunger -60, Health +10, Honor +0.5)"
+        elif item_id == "perfume":
+            self.reputation = min(100.0, self.reputation + 2.0)
+            return True, "You anointed yourself with sacred frankincense perfume. The citizens revere your divine grace! (+2.0 Honor)"
+        elif item_id == "fine_linen":
+            self.reputation = min(100.0, self.reputation + 3.0)
+            return True, "You donned a bleached linen patrician tunic (kitû). Your noble majesty radiates across Babylon! (+3.0 Honor)"
+        elif item_id == "sesame_oil":
+            self.hunger = max(0.0, self.hunger - 20.0)
+            self.energy = min(100.0, self.energy + 10.0)
+            return True, "You tasted rich refined sesame oil. (Hunger -20, Energy +10)"
         else:
             # Generic fallback
             self.hunger = max(0.0, self.hunger - 20.0)
