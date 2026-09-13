@@ -1,0 +1,220 @@
+{
+  "year": 1,
+  "season_idx": 2,
+  "day": 7,
+  "hour": 19.3119889099207,
+  "days_per_season": 14,
+  "workshop_tier": 3,
+  "hired_artisans": 3,
+  "wage_policy": "STATUTORY",
+  "news_ticker": [
+    "King Hammurabi has inscribed his righteous laws upon a diorite stele at the temple of Shamash.",
+    "Euphrates waters are calm. Canals across the southern plains are open for irrigation.",
+    "A caravan arrived from Anatolia with heavy tin ingots; metal tool costs stabilized.",
+    "The King in Babylon proclaimed tax remissions for tenant farmers who dredged their dikes."
+  ],
+  "player": {
+    "name": "Chakra",
+    "patronymic": "Ea-malik",
+    "social_class": "AWILUM",
+    "age": 20,
+    "health": 100.0,
+    "energy": 55.0,
+    "hunger": 91.60000000000002,
+    "thirst": 43.199999999999996,
+    "silver_shekels": 301538.98662962974,
+    "barley_qa": 340394.6227003278,
+    "owned_land_acres": 530.0,
+    "owned_oxen": 4,
+    "owned_sheep": 0,
+    "civic_office": "Rabi\u0101num (City Governor & Mayor)",
+    "reputation": 100.0,
+    "inventory": {
+      "woolen_cloth": 1.0,
+      "pottery": 3.0,
+      "copper_ore": 8.0,
+      "tin": 1.0999999999999996,
+      "barley": 340394.6227003278,
+      "barley_beer": 13.0,
+      "perfume": 98.0,
+      "dates": 8.0,
+      "dried_fish": 7.0,
+      "wool": 4.0,
+      "bronze_weapons": 8.0,
+      "fine_linen": 6.0
+    },
+    "seal": {
+      "material": "Royal Gold-Mounted Lapis Lazuli",
+      "patron_deity": "Shamash",
+      "prestige": 20
+    }
+  },
+  "marriage": {
+    "bride_name": "Amat-Ba'u",
+    "bride_patronymic": "Marduk-nasir",
+    "bride_social_class": "AWILUM",
+    "terhatum": 15.0,
+    "dowry_silver": 40.0,
+    "dowry_land": 10.0,
+    "dowry_oxen": 1,
+    "year": 1
+  },
+  "tablets": [
+    {
+      "id": "tablet_marriage_covenant_0001",
+      "doc_type": "MARRIAGE_CONTRACT",
+      "summary": "Marriage Covenant between Chakra, son of Ea-malik and Amat-Ba'u, daughter of Marduk-nasir. Bride-Price (Terhatum): 15.0 shekels. Dowry (Seriktum): 40.0 silver, 10.0 acres. Statutory Covenant under the Code of Hammurabi \u00a7 128.",
+      "parties": [
+        "Chakra, son of Ea-malik",
+        "Amat-Ba'u, daughter of Marduk-nasir"
+      ],
+      "principal": 15.0
+    },
+    {
+      "id": "tablet_ennoblement_chakra",
+      "doc_type": "ROYAL_DECREE",
+      "summary": "Imperial Charter of Patrician Ennoblement: Chakra, son of Ea-malik is hereby enrolled into the rank of Aw\u012blum by the Puhrum Council of Elders and King Hammurabi. Granted full patrician franchise, standing in the courts of Shamash, and eligibility for all high civic magistracies.",
+      "parties": [
+        "Chakra, son of Ea-malik",
+        "Puhrum Council of Elders",
+        "King Hammurabi"
+      ],
+      "principal": 0.0
+    },
+    {
+      "id": "deed_003",
+      "doc_type": "LAND_DEED",
+      "summary": "Purchase of 5.0 iku of arable canal field at 20 silver/acre",
+      "parties": [
+        "Chakra, son of Ea-malik",
+        "Crown Lands Administration"
+      ],
+      "principal": 100.0
+    },
+    {
+      "id": "deed_004",
+      "doc_type": "LAND_DEED",
+      "summary": "Purchase of 500.0 iku of arable canal field at 20 silver/acre",
+      "parties": [
+        "Chakra, son of Ea-malik",
+        "Crown Lands Administration"
+      ],
+      "principal": 10000.0
+    }
+  ],
+  "has_harvested_spring": false,
+  "sowed_acres": 530.0,
+  "army": {
+    "regiment_counter": 6,
+    "city_treasury_silver": 8951.49,
+    "city_granary_barley": 29668.0,
+    "gate_toll_revenue_daily": 1.8,
+    "tax_policy": "STATUTORY",
+    "regiments": [
+      {
+        "id": "reg_001",
+        "unit_type": "REDU",
+        "soldiers_count": 12,
+        "is_equipped": true,
+        "experience_level": 5,
+        "stationed_gate": "Ishtar Gate (North / Processional Way)"
+      },
+      {
+        "id": "reg_002",
+        "unit_type": "BAIRU",
+        "soldiers_count": 10,
+        "is_equipped": true,
+        "experience_level": 5,
+        "stationed_gate": "Gate of Shamash (South / Canals & Fields)"
+      },
+      {
+        "id": "reg_003",
+        "unit_type": "REDU",
+        "soldiers_count": 84,
+        "is_equipped": true,
+        "experience_level": 5,
+        "stationed_gate": "Ishtar Gate (North / Processional Way)"
+      },
+      {
+        "id": "reg_004",
+        "unit_type": "NARKABTU",
+        "soldiers_count": 100,
+        "is_equipped": true,
+        "experience_level": 5,
+        "stationed_gate": "Ishtar Gate (North / Processional Way)"
+      },
+      {
+        "id": "reg_005",
+        "unit_type": "BAIRU",
+        "soldiers_count": 100,
+        "is_equipped": true,
+        "experience_level": 5,
+        "stationed_gate": "Ishtar Gate (North / Processional Way)"
+      }
+    ]
+  },
+  "market_stocks": {
+    "barley": 2500.0,
+    "emmer": 400.0,
+    "dates": 700.0,
+    "sesame": 400.0,
+    "mustard": 150.0,
+    "cress": 150.0,
+    "dried_fish": 500.0,
+    "raw_wool": 600.0,
+    "flax": 250.0,
+    "animal_dung": 700.0,
+    "barley_beer": 400.0,
+    "spelt_beer": 150.0,
+    "bread": 500.0,
+    "sweet_pastry": 120.0,
+    "sesame_oil": 300.0,
+    "woolen_cloth": 300.0,
+    "fine_linen": 100.0,
+    "pottery": 350.0,
+    "mudbrick": 1000.0,
+    "bitumen": 300.0,
+    "reeds": 800.0,
+    "timber": 200.0,
+    "copper_ore": 150.0,
+    "tin": 80.0,
+    "bronze_tools": 180.0,
+    "perfume": 100.0,
+    "cylinder_seal": 35.0,
+    "bronze_weapons": 45.0,
+    "composite_bow": 25.0,
+    "war_chariot": 12.0
+  },
+  "market_prices": {
+    "barley": 0.817,
+    "emmer": 1.488,
+    "dates": 0.977,
+    "sesame": 1.2,
+    "mustard": 3.5,
+    "cress": 2.2,
+    "dried_fish": 0.7,
+    "raw_wool": 1.75,
+    "flax": 1.8,
+    "animal_dung": 0.175,
+    "barley_beer": 1.018,
+    "spelt_beer": 2.625,
+    "bread": 0.963,
+    "sweet_pastry": 4.375,
+    "sesame_oil": 3.5,
+    "woolen_cloth": 3.829,
+    "fine_linen": 14.0,
+    "pottery": 0.3,
+    "mudbrick": 0.037,
+    "bitumen": 1.925,
+    "reeds": 0.125,
+    "timber": 6.0,
+    "copper_ore": 7.0,
+    "tin": 21.0,
+    "bronze_tools": 8.75,
+    "perfume": 3.975,
+    "cylinder_seal": 20.0,
+    "bronze_weapons": 8.0,
+    "composite_bow": 35.0,
+    "war_chariot": 120.0
+  }
+}

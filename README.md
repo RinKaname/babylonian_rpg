@@ -132,6 +132,7 @@ babylonian_rpg/
 ├── marriage.py                 # Code of Hammurabi marriage covenants (§ 128), dowries, and divorce
 ├── trade.py                    # Tamkarum trade expeditions, donkey caravans, and Gulf fleets
 ├── war.py                      # 3-phase tactical combat solver, regiments, 4 city gates, and campaigns
+├── saves/                      # 20 Cuneiform clay tablet archive slots (slot_01.json - slot_20.json)
 ├── economics_reference.md      # Mathematical reference for the flow pricing and CPI system
 ├── idea_game_concept.md        # Original design document and historical setting notes
 ├── walkthrough.md              # Feature walkthrough and subsystem verification notes

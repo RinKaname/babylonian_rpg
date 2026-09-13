@@ -18,6 +18,7 @@ import os
 import json
 import time
 import random
+import shutil
 from typing import Dict, List, Optional, Any, Tuple
 
 # Ensure clean UTF-8 console output on Windows
@@ -94,6 +95,8 @@ WAGE_POLICIES = {
 class BabylonianGame:
     """The master game coordinator for the Babylonian Life-Sim RPG."""
 
+    SAVES_DIR = "saves"
+    TOTAL_SLOTS = 20
     SAVE_FILE_PATH = "savegame.json"
 
     def __init__(self):
@@ -114,7 +117,7 @@ class BabylonianGame:
             ("Spring", "The Great Barley & Flax Harvest"),
             ("Summer", "Euphrates Flood & Date Palm Gathering")
         ]
-        self.season_idx = 0
+        self.season_idx: int = 0
         self.day: int = 1
         self.hour: float = 8.0  # 08:00 Morning
         self.days_per_season: int = 14
@@ -140,6 +143,10 @@ class BabylonianGame:
 
         # 5. Active Marriage Contract (if player is married)
         self.player_marriage_contract: Optional[MarriageContract] = None
+
+        # 6. Save Slots Management (20 Slots)
+        self.current_slot: int = 1
+        self.ensure_saves_dir()
 
     def get_time_label(self) -> str:
         """Returns descriptive time-of-day label for Babylonian daily rhythms."""
@@ -219,18 +226,75 @@ class BabylonianGame:
     # --------------------------------------------------------------------------
 
     def setup_player_interactive(self):
-        """Allows the player to create or load an authentic Babylonian persona."""
-        print("=" * 78)
-        print("          BABYLONIAN RPG: LIFE IN THE CRADLE OF CIVILIZATION")
-        print("               Ancient Mesopotamia (c. 1750 BC / Old Babylonian)")
-        print("=" * 78)
+        """Allows the player to create or load an authentic Babylonian persona from 20 save slots."""
+        self.ensure_saves_dir()
 
-        if os.path.exists(self.SAVE_FILE_PATH):
-            load_choice = input(" Found existing saved game. Would you like to [L]oad or start [N]ew? [default=N]: ").strip().lower()
-            if load_choice == "l":
-                if self.load_game():
-                    print("\n[+] Saved game successfully restored. Resuming your journey!")
-                    return
+        while True:
+            print("=" * 80)
+            print("          BABYLONIAN RPG: LIFE IN THE CRADLE OF CIVILIZATION")
+            print("               Ancient Mesopotamia (c. 1750 BC / Old Babylonian)")
+            print("=" * 80)
+            print(" [L] Open Cuneiform Archive Vault (Load Save Slot 1-20)")
+            print(" [N] Inscribe New Clay Tablet (Start New Character)")
+            print(" [Q] Depart Babylon / Quit")
+            print("-" * 80)
+            choice = input(" Select option [L/N/Q, default=L]: ").strip().upper() or "L"
+
+            if choice == "L":
+                self.display_save_vault()
+                slot_inp = input(f"\n Select tablet slot to load [1-{self.TOTAL_SLOTS}, or B to return]: ").strip()
+                if slot_inp.upper() == "B":
+                    continue
+                try:
+                    slot_num = int(slot_inp)
+                    if 1 <= slot_num <= self.TOTAL_SLOTS:
+                        meta = self.get_slot_metadata(slot_num)
+                        if not meta["exists"]:
+                            print(f" [!] Slot [{slot_num:02d}] is empty. No cuneiform tablet found.")
+                            continue
+                        self.current_slot = slot_num
+                        self.SAVE_FILE_PATH = self.get_slot_filepath(slot_num)
+                        if self.load_game(self.SAVE_FILE_PATH):
+                            print(f"\n[+] Tablet Slot [{slot_num:02d}] successfully unsealed! Resuming journey of {self.player.full_name}...")
+                            return
+                        else:
+                            print(f" [!] Failed to load save from slot [{slot_num:02d}].")
+                    else:
+                        print(f" [!] Please select a slot between 1 and {self.TOTAL_SLOTS}.")
+                except ValueError:
+                    print(" [!] Invalid input. Please enter a valid slot number.")
+
+            elif choice == "N":
+                # Find first empty slot as default
+                default_slot = 1
+                for s in range(1, self.TOTAL_SLOTS + 1):
+                    if not self.get_slot_metadata(s)["exists"]:
+                        default_slot = s
+                        break
+
+                self.display_save_vault()
+                s_pick = input(f"\n Choose slot for new persona [1-{self.TOTAL_SLOTS}, default={default_slot}, or B to return]: ").strip()
+                if s_pick.upper() == "B":
+                    continue
+                try:
+                    slot_num = int(s_pick) if s_pick else default_slot
+                    if not (1 <= slot_num <= self.TOTAL_SLOTS):
+                        print(f" [!] Slot must be between 1 and {self.TOTAL_SLOTS}.")
+                        continue
+                    meta = self.get_slot_metadata(slot_num)
+                    if meta["exists"]:
+                        warn = input(f" [!] Warning: Slot [{slot_num:02d}] already contains {meta['full_name']}. Overwrite? (y/N): ").strip().lower()
+                        if warn != "y":
+                            continue
+                    self.current_slot = slot_num
+                    self.SAVE_FILE_PATH = self.get_slot_filepath(slot_num)
+                    break
+                except ValueError:
+                    print(" [!] Invalid input.")
+
+            elif choice == "Q":
+                print("May the gods walk beside you. Farewell!")
+                sys.exit(0)
 
         print("\n Choose Your Social Origin in the Kingdom of Babylon:")
         print("-" * 78)
@@ -282,6 +346,10 @@ class BabylonianGame:
 
         print(f"\n[+] In the presence of Shamash the Sun God, your name is inscribed: {self.player.full_name}")
         print(f"    Social Estate: {self.player.social_class.value}")
+        
+        # Auto-save initial persona to the assigned slot
+        print(f"    Imprinting initial tablet into Slot [{self.current_slot:02d}]...")
+        self.save_game(self.get_slot_filepath(self.current_slot))
 
     # --------------------------------------------------------------------------
     # Main Dashboard & HUD
@@ -357,7 +425,7 @@ class BabylonianGame:
         print(" [7] Domestic Household & Archive - Manage Marriage, Dowry, Alimony & Clay Tablets")
         print(" [8] Rest & Sleep (06:00 Dawn) or Advance Season - Recover Energy & Day Progress")
         print(" [E] Eat / Drink Rations from Sacks - Sate hunger, quench thirst, or restore energy")
-        print(" [9] Save Game to Clay Archive")
+        print(f" [9] Cuneiform Archive Vault (Save / Switch Slot - Active: [{self.current_slot:02d}])")
         print(" [0] Exit Game")
         print("-" * 78)
 
@@ -2190,14 +2258,185 @@ class BabylonianGame:
                 self.advance_season()
 
     # --------------------------------------------------------------------------
-    # Save & Load Subsystems
+    # Save & Load Subsystems (20 Cuneiform Tablet Slots)
     # --------------------------------------------------------------------------
 
-    def save_game(self) -> bool:
+    def ensure_saves_dir(self):
+        """Ensures the saves directory exists and migrates root savegame.json if needed."""
+        try:
+            os.makedirs(self.SAVES_DIR, exist_ok=True)
+            slot1_path = os.path.join(self.SAVES_DIR, "slot_01.json")
+            if not os.path.exists(slot1_path) and os.path.exists("savegame.json"):
+                shutil.copy("savegame.json", slot1_path)
+        except Exception:
+            pass
+
+    def get_slot_filepath(self, slot: int) -> str:
+        """Returns the file path for a given save slot (1-20)."""
+        slot = max(1, min(self.TOTAL_SLOTS, slot))
+        return os.path.join(self.SAVES_DIR, f"slot_{slot:02d}.json")
+
+    def get_slot_metadata(self, slot: int) -> dict:
+        """Reads lightweight metadata from a save slot without loading the whole world."""
+        filepath = self.get_slot_filepath(slot)
+        if not os.path.exists(filepath):
+            if slot == 1 and os.path.exists("savegame.json"):
+                filepath = "savegame.json"
+            else:
+                return {"slot": slot, "exists": False, "filepath": filepath}
+
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            p = data.get("player", {})
+            name = p.get("name", "Unknown")
+            patronymic = p.get("patronymic", "")
+            full_name = f"{name} mār {patronymic}" if patronymic else name
+            s_class = p.get("social_class", "MUSHKENUM")
+            office = p.get("civic_office") or "Private Citizen"
+            if "Rabiānum" in office or "Rabianum" in office:
+                office_short = "Rabiānum"
+            elif "Gugallum" in office:
+                office_short = "Gugallum"
+            elif "Dayyānum" in office or "Dayyanum" in office:
+                office_short = "Dayyānum"
+            elif "Šangû" in office or "Sangu" in office:
+                office_short = "Šangû"
+            elif "Rabi Sikkatim" in office:
+                office_short = "General"
+            else:
+                office_short = "Citizen"
+
+            year = data.get("year", 1)
+            s_idx = data.get("season_idx", 0)
+            season_names = ["Autumn", "Winter", "Spring", "Summer"]
+            season_name = season_names[s_idx % len(season_names)]
+            day = data.get("day", 1)
+            hour = data.get("hour", 8.0)
+            h_int = int(hour)
+            m_int = int((hour - h_int) * 60)
+            silver = p.get("silver_shekels", 0.0)
+            barley = p.get("barley_qa", 0.0)
+            return {
+                "slot": slot,
+                "exists": True,
+                "filepath": filepath,
+                "full_name": full_name,
+                "social_class": s_class,
+                "office": office_short,
+                "year": year,
+                "season": season_name,
+                "day": day,
+                "time_str": f"{h_int:02d}:{m_int:02d}",
+                "silver": silver,
+                "barley": barley,
+            }
+        except Exception:
+            return {"slot": slot, "exists": False, "corrupt": True, "filepath": filepath}
+
+    def display_save_vault(self):
+        """Displays formatted listing of all 20 Cuneiform save slots."""
+        print("\n" + "=" * 82)
+        print("          CUNEIFORM CLAY ARCHIVE VAULT - ROYAL ARCHIVES OF BABYLON")
+        print("                            [ 20 TABLET SLOTS ]")
+        print("=" * 82)
+        for s in range(1, self.TOTAL_SLOTS + 1):
+            meta = self.get_slot_metadata(s)
+            active_tag = " [ACTIVE]" if s == self.current_slot else ""
+            if not meta["exists"]:
+                if meta.get("corrupt"):
+                    print(f" [{s:02d}] <Corrupted Clay Tablet Archive>{active_tag}")
+                else:
+                    print(f" [{s:02d}] <Empty Clay Tablet Slot>{active_tag}")
+            else:
+                p_name = meta["full_name"]
+                c_cls = meta["social_class"]
+                c_off = meta["office"]
+                yr = meta["year"]
+                sea = meta["season"]
+                dy = meta["day"]
+                tm = meta["time_str"]
+                silv = meta["silver"]
+                barl = meta["barley"]
+
+                desc = f"{p_name} ({c_cls} / {c_off})"
+                date_str = f"Yr {yr} {sea} D{dy:02d} {tm}"
+                wealth_str = f"{silv:,.1f}s | {barl:,.0f}q"
+                print(f" [{s:02d}] {desc:<34} | {date_str:<18} | {wealth_str:<17}{active_tag}")
+        print("=" * 82)
+
+    def handle_save_menu(self):
+        """Allows quick-saving, saving to another slot, or loading a different playthrough."""
+        while True:
+            print("\n" + "=" * 80)
+            print(f"               INSCRIBE CLAY ARCHIVE TABLET (SAVE GAME)")
+            print(f"               Current Active Tablet Slot: [{self.current_slot:02d}]")
+            print("=" * 80)
+            print(f" [1] Quick-Save to Active Slot [{self.current_slot:02d}]")
+            print(f" [2] Save to Another Slot (Select 1-{self.TOTAL_SLOTS})")
+            print(f" [3] Load Another Tablet Slot (Switch Persona / Playthrough)")
+            print(f" [0] Return to City Square")
+            print("-" * 80)
+            act = input(" Choose option [0-3, default=1]: ").strip() or "1"
+            if act == "1":
+                self.save_game(self.get_slot_filepath(self.current_slot))
+                break
+            elif act == "2":
+                self.display_save_vault()
+                s_inp = input(f"\n Choose target slot [1-{self.TOTAL_SLOTS}, or 0 to cancel]: ").strip()
+                if s_inp == "0":
+                    continue
+                try:
+                    s_num = int(s_inp)
+                    if 1 <= s_num <= self.TOTAL_SLOTS:
+                        meta = self.get_slot_metadata(s_num)
+                        if meta["exists"] and s_num != self.current_slot:
+                            confirm = input(f" [!] Overwrite existing archive in Slot [{s_num:02d}] ({meta['full_name']})? (y/N): ").strip().lower()
+                            if confirm != "y":
+                                continue
+                        self.current_slot = s_num
+                        self.SAVE_FILE_PATH = self.get_slot_filepath(s_num)
+                        self.save_game(self.get_slot_filepath(s_num))
+                        break
+                    else:
+                        print(f" [!] Select between 1 and {self.TOTAL_SLOTS}.")
+                except ValueError:
+                    print(" [!] Invalid input.")
+            elif act == "3":
+                self.display_save_vault()
+                s_inp = input(f"\n Choose tablet slot to load [1-{self.TOTAL_SLOTS}, or 0 to cancel]: ").strip()
+                if s_inp == "0":
+                    continue
+                try:
+                    s_num = int(s_inp)
+                    if 1 <= s_num <= self.TOTAL_SLOTS:
+                        meta = self.get_slot_metadata(s_num)
+                        if not meta["exists"]:
+                            print(f" [!] Slot [{s_num:02d}] is empty.")
+                            continue
+                        confirm = input(f" [!] Unsaved progress on current persona will be lost if not saved. Load Slot [{s_num:02d}] ({meta['full_name']})? (y/N): ").strip().lower()
+                        if confirm == "y":
+                            self.current_slot = s_num
+                            self.SAVE_FILE_PATH = self.get_slot_filepath(s_num)
+                            if self.load_game(self.SAVE_FILE_PATH):
+                                print(f"\n[+] Successfully switched to persona in Slot [{s_num:02d}]: {self.player.full_name}!")
+                                break
+                    else:
+                        print(f" [!] Select between 1 and {self.TOTAL_SLOTS}.")
+                except ValueError:
+                    print(" [!] Invalid input.")
+            elif act == "0":
+                break
+
+    def save_game(self, filepath: Optional[str] = None) -> bool:
         """Serializes current game state to JSON."""
         p = self.player
         if not p:
             return False
+
+        target_path = filepath or self.SAVE_FILE_PATH
+        if target_path == "savegame.json" and self.current_slot:
+            target_path = self.get_slot_filepath(self.current_slot)
 
         save_dict = {
             "year": self.year,
@@ -2277,21 +2516,35 @@ class BabylonianGame:
         }
 
         try:
-            with open(self.SAVE_FILE_PATH, "w", encoding="utf-8") as f:
+            os.makedirs(os.path.dirname(target_path) if os.path.dirname(target_path) else ".", exist_ok=True)
+            with open(target_path, "w", encoding="utf-8") as f:
                 json.dump(save_dict, f, indent=2)
-            print(f" [+] Game state successfully imprinted to clay archive '{self.SAVE_FILE_PATH}'!")
+            print(f" [+] Game state successfully imprinted to clay archive '{target_path}' (Slot [{self.current_slot:02d}])!")
+            # If saving specifically to slot 1, mirror to root savegame.json
+            if target_path == self.get_slot_filepath(1):
+                try:
+                    with open("savegame.json", "w", encoding="utf-8") as f:
+                        json.dump(save_dict, f, indent=2)
+                except Exception:
+                    pass
             return True
         except Exception as e:
             print(f" [!] Error saving game: {e}")
             return False
 
-    def load_game(self) -> bool:
+    def load_game(self, filepath: Optional[str] = None) -> bool:
         """Restores game state from JSON."""
-        if not os.path.exists(self.SAVE_FILE_PATH):
+        target_path = filepath or self.SAVE_FILE_PATH
+        if target_path == "savegame.json" and not os.path.exists("savegame.json"):
+            slot_p = self.get_slot_filepath(self.current_slot)
+            if os.path.exists(slot_p):
+                target_path = slot_p
+
+        if not os.path.exists(target_path):
             return False
 
         try:
-            with open(self.SAVE_FILE_PATH, "r", encoding="utf-8") as f:
+            with open(target_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
             self.year = data["year"]
@@ -2457,10 +2710,10 @@ class BabylonianGame:
             elif choice.lower() == "e":
                 self.handle_eat_drink()
             elif choice == "9":
-                self.save_game()
+                self.handle_save_menu()
             elif choice == "0":
-                print("\n[!] Imprinting current journey to clay archive before departure...")
-                self.save_game()
+                print(f"\n[!] Imprinting current journey to clay tablet slot [{self.current_slot:02d}] before departure...")
+                self.save_game(self.get_slot_filepath(self.current_slot))
                 print("May the gods Shamash and Marduk grant you long life and bountiful harvests. Farewell!")
                 break
             else:

@@ -82,11 +82,15 @@ Babylonian_rpg/
 * Statutory divorce settlements and alimony under Code §§ 137–142.
 * Inspection of all cylinder-seal imprinted clay tablets.
 
-### 8. Living Seasonal Simulation & Save/Load
+### 8. Living Seasonal Simulation & 20-Slot Cuneiform Archive Vault
 * Advance through Autumn $\rightarrow$ Winter $\rightarrow$ Spring $\rightarrow$ Summer.
 * Automatic biological metabolism (eating stored food or suffering hunger/thirst).
 * Macroeconomic quarterly market updates and price movements.
-* Full game state serialization to and from `savegame.json`.
+* **20-Slot Cuneiform Clay Archive Vault**:
+  * Dedicated save directory in `saves/` (`slot_01.json` through `slot_20.json`).
+  * Live archive overview showing player name, social class, civic office, year, season, day, time, silver, and barley.
+  * In-game save menu `[9]` supporting Quick-Save, saving to any chosen slot (1-20) with overwrite confirmation, and switching between different characters/playthroughs without quitting!
+  * Full backward compatibility with root `savegame.json` (auto-migrated to Slot 1, mirrored on save).
 
 ---
 
