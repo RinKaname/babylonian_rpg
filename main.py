@@ -32,6 +32,10 @@ from character import Character, DualWallet, ClayTablet, DocumentType, CylinderS
 from marriage import MarriageManager, MarriageContract, Dowry, DivorceReason
 from trade import TradeManager, TradeCorridor, TransportFleet, TransportType, CaravanMission
 from politics import BabylonianPolitics, OfficeTitle, LawsuitCharge, JudicialCase, OFFICE_CATALOG
+from war import (
+    BabylonianWarEngine, UnitType, SoldierRegiment, CityGate,
+    BattleResult, UNIT_CATALOG
+)
 
 
 # ------------------------------------------------------------------------------
@@ -100,6 +104,7 @@ class BabylonianGame:
         self.marriage_mgr = MarriageManager()
         self.trade_mgr = TradeManager(self.registry, self.market)
         self.politics = BabylonianPolitics(self.registry, self.market)
+        self.war_engine = BabylonianWarEngine(self.registry, self.market)
 
         # 2. Calendar, Day-Clock & World State
         self.year = 1
@@ -174,6 +179,12 @@ class BabylonianGame:
                     print(f"\n [!] Wage Default! Could not pay {daily_wage_silver:.2f} silver to hired artisans. The workers have downed their tools and departed!")
                     self.hired_artisans = 0
                     self.player.reputation = max(10.0, self.player.reputation - 5.0)
+
+            # Daily garrison upkeep settlement (under Governor / Rabiānum administration)
+            if self.player and self.player.civic_office and "Governor" in self.player.civic_office:
+                ok_upkeep, upkeep_msg = self.war_engine.pay_daily_upkeep(self.player)
+                if not ok_upkeep:
+                    print(f"\n{upkeep_msg}")
 
             if self.day > self.days_per_season:
                 self.advance_season()
@@ -644,27 +655,30 @@ class BabylonianGame:
             print(f" Wage Policy:       {wage_info['name']} ({daily_wage_silver:.3f} silver/day/worker | CPI {cpi:.3f}x)")
             print(f" Current Time:      Day {self.day:02d}/{self.days_per_season} | {time_str} ({self.get_time_label()}) | Energy: {self.player.energy:.0f}%")
             print("-" * 75)
-            print(" PRODUCTION RECIPES:")
+            print(" PRODUCTION & FORGING RECIPES:")
             print(" [1] Brewery:      Mash 5 qa Barley           -> 4 Jars Barley Beer    (Base: 3.0h)")
             print(" [2] Bakery:       Bake 3 qa Barley           -> 4 Loaves Flatbread    (Base: 2.0h)")
             print(" [3] Loom:         Weave 4 Talents Raw Wool   -> 2 Bolts Woolen Cloth  (Base: 4.0h)")
-            print(" [4] Bronze Smith: 2 Copper Ore + 0.2 Tin     -> 3 Bronze Tools        (Base: 5.0h)")
-            print(" [5] Brickyard:    2 Reeds + River Silt       -> 5 Mudbricks           (Base: 2.5h)")
-            print(" [6] Lapidary:     Mount Seal in Gold Caps    -> +4 Seal Prestige      (Cost: 20.0 Silver)")
+            print(" [4] Bronze Tools: 2 Copper Ore + 0.2 Tin     -> 3 Bronze Tools        (Base: 5.0h)")
+            print(" [5] Weaponsmith:  3 Copper Ore + 0.3 Tin     -> 2 Bronze Weapons      (Base: 5.0h)")
+            print(" [6] Bowyer:       2 Timber + 2 Raw Wool      -> 1 Composite Bow       (Base: 4.5h)")
+            print(" [7] Chariot Guild:4 Timber + 1 Bronze Tools  -> 1 War Chariot         (Base: 8.0h)")
+            print(" [8] Brickyard:    2 Reeds + River Silt       -> 5 Mudbricks           (Base: 2.5h)")
+            print(" [9] Lapidary:     Mount Seal in Gold Caps    -> +4 Seal Prestige      (Cost: 20.0 Silver)")
             print("-" * 75)
             print(" WORKSHOP MANAGEMENT & ECONOMIES OF SCALE:")
-            print(" [7] Upgrade Workshop Facility Tier (Expand batch capacity & labor scale)")
-            print(" [8] Hire / Dismiss Artisan Laborers (Agru under Code of Hammurabi)")
-            print(" [9] Adjust Statutory Wage Policy (Stingy / Legal § 274 / Efficiency Wage)")
+            print(" [U] Upgrade Workshop Facility Tier (Expand batch capacity & labor scale)")
+            print(" [H] Hire / Dismiss Artisan Laborers (Agru under Code of Hammurabi)")
+            print(" [W] Adjust Statutory Wage Policy (Stingy / Legal § 274 / Efficiency Wage)")
             print(" [0] Return to Agriculture & Land Menu")
             print("-" * 75)
 
-            craft_act = input(" Choose workshop action [0-9]: ").strip()
+            craft_act = input(" Choose workshop action [0-9, U, H, W]: ").strip()
 
             if craft_act == "0":
                 break
 
-            elif craft_act in ["1", "2", "3", "4", "5"]:
+            elif craft_act in ["1", "2", "3", "4", "5", "6", "7", "8"]:
                 # Calculate max batches possible based on inventory
                 if craft_act == "1":  # Brewery: 5 barley -> 4 beer
                     barley_avail = self.player.wallet.barley_qa
@@ -693,7 +707,7 @@ class BabylonianGame:
                     base_hours = 4.0
                     output_key = "woolen_cloth"
                     yield_per_batch = 2.0
-                elif craft_act == "4":  # Smith: 2 copper + 0.2 tin -> 3 tools
+                elif craft_act == "4":  # Bronze Tools: 2 copper + 0.2 tin -> 3 tools
                     cop_avail = self.player.inventory.get("copper_ore", 0.0)
                     tin_avail = self.player.inventory.get("tin", 0.0)
                     max_by_cop = int(cop_avail // 2.0)
@@ -705,12 +719,48 @@ class BabylonianGame:
                     base_hours = 5.0
                     output_key = "bronze_tools"
                     yield_per_batch = 3.0
-                elif craft_act == "5":  # Brickyard: 2 reed -> 5 bricks
-                    reed_avail = self.player.inventory.get("reed", 0.0)
+                elif craft_act == "5":  # Weaponsmith: 3 copper + 0.3 tin -> 2 bronze weapons
+                    cop_avail = self.player.inventory.get("copper_ore", 0.0)
+                    tin_avail = self.player.inventory.get("tin", 0.0)
+                    max_by_cop = int(cop_avail // 3.0)
+                    max_by_tin = int(tin_avail // 0.3)
+                    max_possible = min(max_by_cop, max_by_tin)
+                    recipe_name = "Bronze Spears & Battle-Axes"
+                    unit_in = "3 Copper Ore + 0.3 Tin"
+                    unit_out = "2 Bronze Weapons (kakku)"
+                    base_hours = 5.0
+                    output_key = "bronze_weapons"
+                    yield_per_batch = 2.0
+                elif craft_act == "6":  # Bowyer: 2 timber + 2 wool -> 1 composite bow
+                    timber_avail = self.player.inventory.get("timber", 0.0)
+                    wool_avail = self.player.inventory.get("raw_wool", 0.0) + self.player.inventory.get("wool", 0.0)
+                    max_by_timber = int(timber_avail // 2.0)
+                    max_by_wool = int(wool_avail // 2.0)
+                    max_possible = min(max_by_timber, max_by_wool)
+                    recipe_name = "Composite Bow"
+                    unit_in = "2 Timber + 2 Raw Wool/Sinew"
+                    unit_out = "1 Composite Bow (qaštu)"
+                    base_hours = 4.5
+                    output_key = "composite_bow"
+                    yield_per_batch = 1.0
+                elif craft_act == "7":  # Chariot Guild: 4 timber + 1 bronze tools -> 1 war chariot
+                    timber_avail = self.player.inventory.get("timber", 0.0)
+                    tools_avail = self.player.inventory.get("bronze_tools", 0.0)
+                    max_by_timber = int(timber_avail // 4.0)
+                    max_by_tools = int(tools_avail // 1.0)
+                    max_possible = min(max_by_timber, max_by_tools)
+                    recipe_name = "Spoked War Chariot"
+                    unit_in = "4 Timber + 1 Bronze Tools"
+                    unit_out = "1 War Chariot (narkabtu)"
+                    base_hours = 8.0
+                    output_key = "war_chariot"
+                    yield_per_batch = 1.0
+                elif craft_act == "8":  # Brickyard: 2 reed -> 5 bricks
+                    reed_avail = self.player.inventory.get("reeds", 0.0) + self.player.inventory.get("reed", 0.0)
                     max_possible = int(reed_avail // 2.0)
                     recipe_name = "Mudbricks"
-                    unit_in = "2 Reeds"
-                    unit_out = "5 Mudbricks"
+                    unit_in = "2 Marsh Reeds"
+                    unit_out = "5 Mudbricks (libittu)"
                     base_hours = 2.5
                     output_key = "mudbrick"
                     yield_per_batch = 5.0
@@ -784,8 +834,45 @@ class BabylonianGame:
                     if self.player.inventory["tin"] <= 1e-4:
                         del self.player.inventory["tin"]
                 elif craft_act == "5":
-                    self.player.inventory["reed"] -= 2.0 * n_batches
-                    if self.player.inventory["reed"] <= 1e-4:
+                    self.player.inventory["copper_ore"] -= 3.0 * n_batches
+                    self.player.inventory["tin"] -= 0.3 * n_batches
+                    if self.player.inventory["copper_ore"] <= 1e-4:
+                        del self.player.inventory["copper_ore"]
+                    if self.player.inventory["tin"] <= 1e-4:
+                        del self.player.inventory["tin"]
+                elif craft_act == "6":
+                    self.player.inventory["timber"] -= 2.0 * n_batches
+                    if self.player.inventory["timber"] <= 1e-4:
+                        del self.player.inventory["timber"]
+                    needed_wool = 2.0 * n_batches
+                    if self.player.inventory.get("raw_wool", 0.0) >= needed_wool:
+                        self.player.inventory["raw_wool"] -= needed_wool
+                    else:
+                        needed_wool -= self.player.inventory.get("raw_wool", 0.0)
+                        self.player.inventory["raw_wool"] = 0.0
+                        self.player.inventory["wool"] -= needed_wool
+                    if self.player.inventory.get("raw_wool", 0.0) <= 1e-4 and "raw_wool" in self.player.inventory:
+                        del self.player.inventory["raw_wool"]
+                    if self.player.inventory.get("wool", 0.0) <= 1e-4 and "wool" in self.player.inventory:
+                        del self.player.inventory["wool"]
+                elif craft_act == "7":
+                    self.player.inventory["timber"] -= 4.0 * n_batches
+                    self.player.inventory["bronze_tools"] -= 1.0 * n_batches
+                    if self.player.inventory["timber"] <= 1e-4:
+                        del self.player.inventory["timber"]
+                    if self.player.inventory["bronze_tools"] <= 1e-4:
+                        del self.player.inventory["bronze_tools"]
+                elif craft_act == "8":
+                    needed_reeds = 2.0 * n_batches
+                    if self.player.inventory.get("reeds", 0.0) >= needed_reeds:
+                        self.player.inventory["reeds"] -= needed_reeds
+                    else:
+                        needed_reeds -= self.player.inventory.get("reeds", 0.0)
+                        self.player.inventory["reeds"] = 0.0
+                        self.player.inventory["reed"] -= needed_reeds
+                    if self.player.inventory.get("reeds", 0.0) <= 1e-4 and "reeds" in self.player.inventory:
+                        del self.player.inventory["reeds"]
+                    if self.player.inventory.get("reed", 0.0) <= 1e-4 and "reed" in self.player.inventory:
                         del self.player.inventory["reed"]
 
                 # Add finished output
@@ -802,7 +889,7 @@ class BabylonianGame:
                 print(f"     Time elapsed: {hours_needed:.1f} hours. Current time: Day {self.day:02d} | {new_h:02d}:{new_m:02d} ({self.get_time_label()}).")
                 print(f"     Remaining energy: {self.player.energy:.0f}%.")
 
-            elif craft_act == "6":
+            elif craft_act == "9":
                 if not self.player.cylinder_seal:
                     print(" [!] You have no cylinder seal to embellish!")
                 elif "Gold-Mounted" in self.player.cylinder_seal.material:
@@ -818,7 +905,7 @@ class BabylonianGame:
                 else:
                     print(" [!] Requires 20.0 silver shekels to commission royal gold filigree.")
 
-            elif craft_act == "7":
+            elif craft_act.upper() == "U":
                 # Upgrade Workshop Facility Tier
                 if self.workshop_tier == 1:
                     info = WORKSHOP_TIERS[2]
@@ -855,7 +942,7 @@ class BabylonianGame:
                 else:
                     print("\n [!] Your workshop is already at the maximum tier (Tier 3: Patrician Manufactory).")
 
-            elif craft_act == "8":
+            elif craft_act.upper() == "H":
                 # Hire / Dismiss Artisan Laborers
                 print(f"\n--- MANAGE ARTISAN LABOR (AGRU - CODE OF HAMMURABI §§ 273-274) ---")
                 print(f" Current Staff:    {self.hired_artisans} hired artisan(s)")
@@ -879,7 +966,7 @@ class BabylonianGame:
                 except ValueError:
                     print(" [!] Invalid number.")
 
-            elif craft_act == "9":
+            elif craft_act.upper() == "W":
                 # Adjust Statutory Wage Policy
                 print("\n--- STATUTORY WAGE POLICY (CODE OF HAMMURABI §§ 273-274) ---")
                 print(" Under King Hammurabi's diorite stele, artisan and field laborer wages are established:")
@@ -1218,10 +1305,7 @@ class BabylonianGame:
                         except ValueError:
                             pass
                     elif "Governor" in self.player.civic_office:
-                        pet = input(" Petition Great King Hammurabi for a Royal Misharum Debt Jubilee? (y/N): ").strip().lower()
-                        if pet == "y":
-                            ok, msg = self.politics.petition_debt_jubilee_misharum(self.player)
-                            print(msg)
+                        self.handle_governor_powers()
                     elif "Magistrate" in self.player.civic_office:
                         print(" [+] As Dayyānum, you reviewed contracts and enforced the stelae decrees of Shamash at the gate.")
                         self.player.reputation = min(100.0, self.player.reputation + 2.0)
@@ -1272,6 +1356,167 @@ class BabylonianGame:
             ok, msg = self.politics.appoint_or_elect(self.player, target_office, bribe_silver=bribe, sponsor_feast=feast)
             print("\n" + msg)
             break
+
+    def handle_governor_powers(self):
+        """Executive governance of Babylon: city defense, gate garrisons, levies, and military campaigns."""
+        while True:
+            security_pct = self.war_engine.calculate_city_security()
+            sec_label = self.war_engine.get_security_label()
+            total_soldiers = sum(r.soldiers_count for r in self.war_engine.standing_army)
+            daily_grain, daily_silver = self.war_engine.calculate_daily_upkeep()
+
+            print("\n" + "=" * 78)
+            print("        EXECUTIVE GOVERNANCE & GARRISON COMMAND (RABIĀNUM / MAYOR)")
+            print("=" * 78)
+            print(f" City Security Rating: {security_pct:.1f}% ({sec_label})")
+            print(f" Standing Forces:      {len(self.war_engine.standing_army)} Regiments ({total_soldiers} Active Warriors)")
+            print(f" Daily Garrison Upkeep: {daily_silver:.2f} silver shekels | {daily_grain:.0f} qa barley")
+            print(f" Your Treasury:        {self.player.wallet.silver_shekels:.2f} silver | {self.player.wallet.barley_qa:.0f} qa barley")
+            print("-" * 78)
+            print(" MUNICIPAL & MILITARY EXECUTIVE ORDERS:")
+            print(" [1] Inspect City Garrison & Station Troops at City Gates")
+            print(" [2] Recruit Military Regiments (Bā'iru, Rēdû, Chariots, Militia)")
+            print(" [3] Arm Regiments with Manufactured Weapons from Inventory")
+            print(" [4] Launch Military Campaigns & Expeditions against Hostile Threats")
+            print(" [5] Municipal Granary Famine Relief (Distribute 100 qa grain, gain Honor)")
+            print(" [6] Petition Great King Hammurabi for Royal Misharum Debt Jubilee")
+            print(" [0] Return to Civic Offices Menu")
+            print("-" * 78)
+
+            gov_act = input(" Select executive order [0-6]: ").strip()
+
+            if gov_act == "0":
+                break
+
+            elif gov_act == "1":
+                # Inspect Garrison & Station Troops at Gates
+                print("\n" + "=" * 78)
+                print("              BABYLON CITY GARRISON & GATE STATIONS")
+                print("=" * 78)
+                if not self.war_engine.standing_army:
+                    print(" [!] No active regiments in the municipal garrison.")
+                else:
+                    for idx, reg in enumerate(self.war_engine.standing_army, 1):
+                        equip_tag = "[ARMED]" if reg.is_equipped or reg.definition.required_equipment is None else "[UNARMED]"
+                        gate_tag = reg.stationed_gate if reg.stationed_gate else "Mobile Reserve"
+                        print(f" [{idx}] {reg.id}: {reg.definition.name:<25} ({reg.soldiers_count} men) {equip_tag:<9} Lv.{reg.experience_level} | Gate: {gate_tag}")
+                        print(f"      Prowess: Range {reg.range_power:.0f} | Melee {reg.melee_power:.0f} | Def {reg.defense_power:.0f} | Morale {reg.total_morale:.0f}")
+
+                print("\n Station a Regiment at a City Gate:")
+                reg_choice = input(f" Enter regiment number to reassign [1-{len(self.war_engine.standing_army)}, or 0 to return]: ").strip()
+                try:
+                    r_idx = int(reg_choice)
+                    if 1 <= r_idx <= len(self.war_engine.standing_army):
+                        sel_reg = self.war_engine.standing_army[r_idx - 1]
+                        print(f"\n Select destination gate for {sel_reg.id} ({sel_reg.definition.name}):")
+                        gates = list(CityGate)
+                        for g_idx, gate in enumerate(gates, 1):
+                            print(f" [{g_idx}] {gate.value}")
+                        print(f" [{len(gates)+1}] Mobile Reserve (Unassigned)")
+                        g_choice = input(f" Choose gate [1-{len(gates)+1}]: ").strip()
+                        g_num = int(g_choice)
+                        if 1 <= g_num <= len(gates):
+                            sel_reg.stationed_gate = gates[g_num - 1].value
+                            print(f" [+] Stationed {sel_reg.id} at {sel_reg.stationed_gate}!")
+                        elif g_num == len(gates) + 1:
+                            sel_reg.stationed_gate = None
+                            print(f" [+] Assigned {sel_reg.id} to Mobile Reserve.")
+                except ValueError:
+                    pass
+
+            elif gov_act == "2":
+                # Recruit Regiments
+                print("\n" + "=" * 78)
+                print("           RECRUIT MILITARY LEVIES & ROYAL REGIMENTS")
+                print("=" * 78)
+                print(" [1] Bā'iru Archers        - 2.0 silv + 9 qa grain/man  | Needs: Composite Bows")
+                print(" [2] Rēdû Heavy Spearmen   - 3.0 silv + 12 qa grain/man | Needs: Bronze Weapons")
+                print(" [3] Narkabtu War Chariots - 10.0 silv + 36 qa grain/man| Needs: War Chariots")
+                print(" [4] Peasant Militia Levies- 0.5 silv + 6 qa grain/man  | Improvised weapons")
+                print(" [0] Cancel")
+                u_pick = input(" Choose unit type [0-4]: ").strip()
+                unit_type_map = {
+                    "1": UnitType.BAIRU,
+                    "2": UnitType.REDU,
+                    "3": UnitType.NARKABTU,
+                    "4": UnitType.MILITIA
+                }
+                if u_pick in unit_type_map:
+                    target_u = unit_type_map[u_pick]
+                    cnt_str = input(f" How many soldiers to recruit for {target_u.name}? ").strip()
+                    try:
+                        cnt = int(cnt_str)
+                        if cnt > 0:
+                            ok_rec, rec_msg = self.war_engine.recruit_regiment(self.player, target_u, cnt)
+                            print("\n" + rec_msg)
+                    except ValueError:
+                        print(" [!] Invalid number.")
+
+            elif gov_act == "3":
+                # Arm Regiments
+                print("\n" + "=" * 78)
+                print("          ARM REGIMENTS WITH MANUFACTURED WEAPONS")
+                print("=" * 78)
+                print(f" Weapons in Sacks: Bronze Weapons: {self.player.inventory.get('bronze_weapons', 0.0):.0f} | "
+                      f"Composite Bows: {self.player.inventory.get('composite_bow', 0.0):.0f} | "
+                      f"War Chariots: {self.player.inventory.get('war_chariot', 0.0):.0f}")
+                unarmed = [r for r in self.war_engine.standing_army if not r.is_equipped and r.definition.required_equipment is not None]
+                if not unarmed:
+                    print(" [★] All standing regiments requiring arms are already fully equipped!")
+                else:
+                    for idx, reg in enumerate(unarmed, 1):
+                        print(f" [{idx}] {reg.id}: {reg.definition.name} ({reg.soldiers_count} men) -> Needs {reg.soldiers_count} {reg.definition.required_equipment}")
+                    r_pick = input(f" Select regiment to arm [1-{len(unarmed)}, or 0 to return]: ").strip()
+                    try:
+                        r_num = int(r_pick)
+                        if 1 <= r_num <= len(unarmed):
+                            chosen_reg = unarmed[r_num - 1]
+                            ok_arm, arm_msg = self.war_engine.arm_regiment(self.player, chosen_reg.id)
+                            print("\n" + arm_msg)
+                    except ValueError:
+                        pass
+
+            elif gov_act == "4":
+                # Military Campaigns
+                print("\n" + "=" * 78)
+                print("        MILITARY CAMPAIGNS & DEFENSIVE EXPEDITIONS")
+                print("=" * 78)
+                print(" [1] Repel Sutean Desert Nomad Raiders   (Threat: Low-Med  | Spoils: Silver, Barley, Wool)")
+                print(" [2] Purge Zagros Mountain Brigands      (Threat: Medium   | Spoils: Silver, Copper, Tin)")
+                print(" [3] King Hammurabi's Imperial War       (Threat: High     | Massive Spoils: Silver, Arms, Honor)")
+                print(" [4] Processional Way Grand Troop Drill  (Threat: None     | Increases Troop Experience Level)")
+                print(" [0] Return")
+                camp_pick = input(" Choose campaign [0-4]: ").strip()
+                if camp_pick in ["1", "2", "3", "4"]:
+                    c_idx = int(camp_pick)
+                    if not self.war_engine.standing_army:
+                        print(" [!] You have no soldiers to field in battle!")
+                        continue
+                    print(f"\n Mobilizing all {len(self.war_engine.standing_army)} regiments ({sum(r.soldiers_count for r in self.war_engine.standing_army)} soldiers)...")
+                    result = self.war_engine.launch_campaign(self.player, c_idx, list(self.war_engine.standing_army))
+                    # Clean out destroyed regiments
+                    self.war_engine.standing_army = [r for r in self.war_engine.standing_army if r.soldiers_count > 0]
+                    print("\n" + "\n".join(result.chronicle))
+                    # Time progression for campaign
+                    hours_camp = 4.0 if c_idx == 4 else 8.0
+                    self.advance_hours(hours_camp)
+
+            elif gov_act == "5":
+                # Famine relief
+                if self.player.wallet.barley_qa < 100.0:
+                    print(" [!] You need at least 100 qa of barley in your treasury for famine relief.")
+                else:
+                    self.player.wallet.spend_barley(100.0)
+                    self.player.reputation = min(100.0, self.player.reputation + 5.0)
+                    print(" [★] You distributed 100 qa of barley from your municipal granary to destitute commoners!")
+                    print(f"     The citizens of Babylon shower blessings upon Governor {self.player.full_name}! Reputation elevated +5.0.")
+
+            elif gov_act == "6":
+                # Royal Misharum Debt Jubilee Petition
+                pet = input(" Petition Great King Hammurabi for a Royal Misharum Debt Jubilee? (y/N): ").strip().lower()
+                if pet == "y":
+                    ok, msg = self.politics.petition_debt_jubilee_misharum(self.player)
+                    print("\n" + msg)
 
     # --------------------------------------------------------------------------
     # Subsystem 6: The Gate of Shamash (Hall of Justice & Hammurabi's Code)
@@ -1582,6 +1827,20 @@ class BabylonianGame:
                 }
                 for t in (self.player.tablets if self.player else [])
             ],
+            "army": {
+                "regiment_counter": self.war_engine.regiment_counter,
+                "regiments": [
+                    {
+                        "id": r.id,
+                        "unit_type": r.unit_type.name,
+                        "soldiers_count": r.soldiers_count,
+                        "is_equipped": r.is_equipped,
+                        "experience_level": r.experience_level,
+                        "stationed_gate": r.stationed_gate
+                    }
+                    for r in self.war_engine.standing_army
+                ]
+            },
             "market_prices": {g_id: state.current_price for g_id, state in self.market.goods.items()}
         }
 
@@ -1682,6 +1941,23 @@ class BabylonianGame:
             # If player is married to Amat-Ba'u but tablet list was empty, restore covenant tablet
             if self.player_marriage_contract and not any(t.doc_type == DocumentType.MARRIAGE_CONTRACT for t in self.player.tablets):
                 self.player.tablets.append(self.player_marriage_contract.cuneiform_tablet)
+
+            # Restore military standing army
+            if "army" in data:
+                a_data = data["army"]
+                self.war_engine.regiment_counter = a_data.get("regiment_counter", 1)
+                self.war_engine.standing_army = []
+                for r_item in a_data.get("regiments", []):
+                    u_type = UnitType[r_item["unit_type"]]
+                    reg = SoldierRegiment(
+                        id=r_item["id"],
+                        unit_type=u_type,
+                        soldiers_count=r_item["soldiers_count"],
+                        is_equipped=r_item.get("is_equipped", False),
+                        experience_level=r_item.get("experience_level", 1),
+                        stationed_gate=r_item.get("stationed_gate")
+                    )
+                    self.war_engine.standing_army.append(reg)
 
             # Restore market prices
             if "market_prices" in data:
@@ -1821,8 +2097,37 @@ def run_automated_smoke_test():
     won, rep = game.politics.adjudicate_case(case, magistrate=game.npcs["temple_priest"])
     print(" [+] Court litigation resolved.")
 
-    # 7. Season Advance, Save & Load with Clock State
-    print("\n[7/7] Testing Season Advance & Save/Load with Intraday State...")
+    # 7. Military Command, Warfare & Weapon Forging
+    print("\n[7/8] Testing Babylonian Warfare Engine, Levies & Campaigns...")
+    game.player.wallet.add_silver(100.0)
+    game.player.wallet.add_barley(500.0)
+    initial_army_len = len(game.war_engine.standing_army)
+    # Recruit 5 Bā'iru archers
+    ok_rec, msg_rec = game.war_engine.recruit_regiment(game.player, UnitType.BAIRU, 5)
+    assert ok_rec, f"Recruitment failed: {msg_rec}"
+    assert len(game.war_engine.standing_army) == initial_army_len + 1
+    new_reg = game.war_engine.standing_army[-1]
+    assert not new_reg.is_equipped, "Should start unequipped without bow in sacks"
+
+    # Give player composite bows and arm the regiment
+    game.player.inventory["composite_bow"] = 5.0
+    ok_arm, msg_arm = game.war_engine.arm_regiment(game.player, new_reg.id)
+    assert ok_arm, f"Arming failed: {msg_arm}"
+    assert new_reg.is_equipped, "Regiment should now be equipped"
+    assert game.player.inventory.get("composite_bow", 0.0) == 0.0
+
+    # Test military drill campaign
+    drill_res = game.war_engine.launch_campaign(game.player, 4, [new_reg])
+    assert drill_res.victory, "Drill should always succeed"
+    assert new_reg.experience_level >= 2, "Drill should increase experience level"
+
+    # Test security rating calculation
+    sec_rating = game.war_engine.calculate_city_security()
+    assert sec_rating > 0, "Security rating should be positive"
+    print(f" [+] Warfare engine verified: Recruited, armed, drilled (Security Rating: {sec_rating:.1f}%).")
+
+    # 8. Season Advance, Save & Load with Army & Clock State
+    print("\n[8/8] Testing Season Advance & Save/Load with Army & Intraday State...")
     game.advance_season()
     game.SAVE_FILE_PATH = "test_savegame.json"
     game.workshop_tier = 2
@@ -1833,9 +2138,10 @@ def run_automated_smoke_test():
     assert game.workshop_tier == 2, "Workshop tier failed to restore"
     assert game.hired_artisans == 1, "Hired artisans failed to restore"
     assert game.wage_policy == "EFFICIENCY", "Wage policy failed to restore"
+    assert len(game.war_engine.standing_army) == initial_army_len + 1, "Army regiments failed to restore"
     if os.path.exists("test_savegame.json"):
         os.remove("test_savegame.json")
-    print(" [+] Save/Load with Day/Hour & Workshop State verified.")
+    print(" [+] Save/Load with Army, Day/Hour & Workshop State verified.")
 
     print("\n" + "=" * 78)
     print("   ALL BABYLONIAN RPG SUBSYSTEMS FULLY OPERATIONAL & VERIFIED!")

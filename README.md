@@ -78,21 +78,43 @@ An authentic, historically grounded life-simulation terminal RPG set in the city
 - **Divorce Settlements (Code §§ 137–142)**: Legal dissolution with statutory dowry restitution.
 - **Cylinder Seals (*Kunukku*)**: Carved seals in Steatite, Hematite, Carnelian, or Lapis Lazuli mounted with royal gold filigree to seal clay tablets.
 
+### 11. Warfare, Weaponsmithing & Municipal Garrison Command
+- **Unit Regiments & Armaments (Code §§ 26–41)**:
+  - **Bā'iru**: Composite bow skirmishers (requires `composite_bow`).
+  - **Rēdû**: Heavy phalanx spearmen (requires `bronze_weapons`).
+  - **Narkabtu**: Two-wheeled spoked war chariots (requires `war_chariot`).
+  - **Peasant Militia**: Emergency commoner levies (*ṣābu*).
+- **Weapon Forging in Guild Workshops**:
+  - *Weaponsmith*: 3 Copper Ore + 0.3 Tin $\rightarrow$ 2 Bronze Weapons (*kakku*).
+  - *Bowyer & Fletcher*: 2 Timber + 2 Raw Wool/Sinew $\rightarrow$ 1 Composite Bow (*qaštu*).
+  - *Chariot Guild*: 4 Timber + 1 Bronze Tools $\rightarrow$ 1 War Chariot (*narkabtu*).
+- **The 4 Great Gates of Babylon**: Station regiments at Ishtar Gate (North), Gate of Shamash (South), Marduk Gate (East), or Urash Gate (West). Garrison strength drives City Security Rating (0–100%).
+- **3-Phase Tactical Combat Solver**: Resolves battles through Archery Volley, Chariot Shock Charge, and Melee Phalanx Clash.
+- **Military Campaigns & Spoils of War (*Šallatu*)**:
+  1. Repelling Sutean Desert Nomad Raiders.
+  2. Purging Zagros Mountain Brigands along trade corridors.
+  3. King Hammurabi's Imperial Campaigns (Battle of Larsa & Elam).
+  4. Processional Way Grand Military Drills (Troop experience upgrades).
+- **Executive Mayoral Duties (*Rabiānum*)**: Review garrisons, recruit and arm regiments, launch defense campaigns, distribute granary famine relief, and petition King Hammurabi for royal *Misharum* debt jubilees.
+
 ---
 
-## Quick Start
+## Installation & Quickstart
 
-### Requirements
-- Python 3.8+ (no external third-party dependencies required; uses Python standard library).
+Clone the repository and run directly with Python 3.8+:
 
-### Launching the Game
-Clone the repository and run:
+```bash
+git clone https://github.com/RinKaname/babylonian_rpg.git
+cd babylonian_rpg
+```
+
+### Running the Interactive Game
 ```bash
 python main.py
 ```
 
 ### Running the Subsystem Smoke Test
-Validate all game subsystems, time progression, batch production, and savegame serialization:
+Validate all game subsystems, warfare engine, time progression, batch production, and savegame serialization:
 ```bash
 python main.py --test
 ```
@@ -109,6 +131,7 @@ babylonian_rpg/
 ├── politics.py                 # 5 civic offices, Puhrum elections, lawsuits, and royal decrees
 ├── marriage.py                 # Code of Hammurabi marriage covenants (§ 128), dowries, and divorce
 ├── trade.py                    # Tamkarum trade expeditions, donkey caravans, and Gulf fleets
+├── war.py                      # 3-phase tactical combat solver, regiments, 4 city gates, and campaigns
 ├── economics_reference.md      # Mathematical reference for the flow pricing and CPI system
 ├── idea_game_concept.md        # Original design document and historical setting notes
 ├── walkthrough.md              # Feature walkthrough and subsystem verification notes

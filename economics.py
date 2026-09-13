@@ -171,6 +171,9 @@ class GoodsRegistry:
         self.register(Good("cylinder_seal", "Carved Cylinder Seal", "kunukku", GoodCategory.LUXURY_STATUS, 
                            base_price=20.00, weight_kg=0.2,
                            description="Reverse-intaglio semi-precious stone seal; mandatory legal signature and status symbol."))
+        self.register(Good("bronze_weapons", "Bronze Spears & Battle-Axes", "kakku", GoodCategory.ARMAMENT, 
+                           base_price=8.00, weight_kg=3.0,
+                           description="Standard military arms for Rēdû heavy infantry and city gate guards."))
         self.register(Good("composite_bow", "Laminated Composite Bow", "qaštu", GoodCategory.ARMAMENT, 
                            base_price=35.00, weight_kg=1.5,
                            description="Four-tier wood-horn-sinew masterpiece; takes a year to cure; high armor-piercing lethality."))
