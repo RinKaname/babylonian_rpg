@@ -584,10 +584,11 @@ class BabylonianGame:
             print(" [5] Artisan Workshops & Guilds (Batch Brewing, Baking, Weaving, Smithing & Wages)")
             print(" [6] Municipal Corvée Wage Labor (Code §§ 273-274: 5 grains silver/day)")
             print(" [7] Forage & Gather Alluvial Commons (Timber, Reeds, Silt, Dung, Cress, Fish, Bitumen)")
+            print(" [8] Mobilize Corvée Labor Gangs (Tupšikku / Agrū Bulk Gathering - 0% Energy)")
             print(" [0] Return to City Square")
             print("-" * 70)
 
-            act = input(" Choose action [0-7]: ").strip()
+            act = input(" Choose action [0-8]: ").strip()
 
             if act == "1":
                 # Seasonal agriculture operations
@@ -779,6 +780,9 @@ class BabylonianGame:
             elif act == "7":
                 self.handle_forage()
 
+            elif act == "8":
+                self.handle_corvee_forage()
+
             elif act == "0":
                 break
 
@@ -799,12 +803,16 @@ class BabylonianGame:
             print(" [5] Forage Wild Watercress & Mustard Herbs  - 3.0 hrs, 15% nrg -> 3-8 Cress, 2-5 Mustard (CPI Food)")
             print(" [6] Net River Carp in Euphrates (Nūnu)      - 4.0 hrs, 20% nrg -> 8-20 Dried Fish (Protein)")
             print(" [7] Haul Raw Bitumen Pitch from Seeps (Ittû)- 4.0 hrs, 25% nrg -> 4-10 Bitumen (Waterproofing)")
+            print(" [C] Mobilize Corvée Labor Gang (Tupšikku)   - Requisition laborers for BULK harvests (0% energy)")
             print(" [0] Return to Agriculture & Workshop Menu")
             print("-" * 72)
 
-            f_act = input(" Choose foraging expedition [0-7]: ").strip()
+            f_act = input(" Choose foraging expedition [0-7, C]: ").strip()
             if f_act == "0":
                 break
+            if f_act.upper() == "C":
+                self.handle_corvee_forage()
+                continue
 
             if self.player.energy < 20:
                 print(" [!] You are too exhausted to trek the marshes and riverbanks. Rest first!")
@@ -890,6 +898,160 @@ class BabylonianGame:
                 self.player.skills.craftsmanship += 1
                 self.advance_hours(hrs)
                 print(f" [+] Bitumen Pits (4.0 hours)! Ladled {qty:.1f} jars of natural petroleum pitch (Ittû)!")
+
+    def handle_corvee_forage(self):
+        """Requisition or hire day-labor gangs (Tupšikku / Agrū under Code §§ 273-274) to harvest alluvial resources in industrial bulk."""
+        while True:
+            ox_bonus_pct = self.player.owned_oxen * 10
+            status_title = "Awīlum Patrician" if self.player.social_class == SocialClass.AWILUM else self.player.social_class.value
+            civic_off = getattr(self.player, "civic_office", getattr(self.player, "office", None))
+            if civic_off and str(civic_off) != "Private Citizen":
+                office_str = civic_off.value if hasattr(civic_off, "value") else str(civic_off)
+                status_title = f"{status_title} & {office_str}"
+
+            print("\n" + "=" * 74)
+            print("       MOBILIZE CORVÉE / HIRED LABOR GANG (TUPŠIKKU & AGRŪ)")
+            print("=" * 74)
+            print(" Requisition a team of day-laborers with pack beasts and ox-carts to harvest")
+            print(" natural raw materials from the commons in industrial quantities (0% player energy).")
+            print(f" Commissioner:     {self.player.full_name} ({status_title})")
+            print(f" Treasury Purse:   {self.player.wallet.silver_shekels:.2f} silver shekels | Granary: {self.player.wallet.barley_qa:.0f} qa barley")
+            print(f" Beast Transport:  {self.player.owned_oxen} draft oxen (+{ox_bonus_pct}% haul capacity bonus)")
+            print("-" * 74)
+            print(" [1] Timber Felling Crew (Iṣu)       - 5.0 silv + 20 qa grain -> 25-50 Timber Logs")
+            print(" [2] Marsh Reed Harvesters (Qanû)    - 2.0 silv + 15 qa grain -> 120-250 Marsh Reeds")
+            print(" [3] Mudbrick Molding Crew (Tīdu)    - 3.5 silv + 15 qa grain -> 80-180 Mudbricks")
+            print(" [4] Dung Fuel Sweepers (Kibrītu)    - 1.5 silv + 10 qa grain -> 150-300 Dung Fuel Cakes")
+            print(" [5] Wetland Herb Pickers (Sahlû)    - 2.5 silv + 15 qa grain -> 30-60 Cress, 20-40 Mustard")
+            print(" [6] River Fisherman Flotilla (Nūnu) - 3.0 silv + 15 qa grain -> 60-140 Dried Fish")
+            print(" [7] Bitumen Seep Haulers (Ittû)     - 4.0 silv + 20 qa grain -> 30-70 Bitumen Pitch")
+            print(" [0] Return to Commons Foraging Menu")
+            print("-" * 74)
+
+            c_act = input(" Choose corvée labor dispatch [0-7]: ").strip()
+            if c_act == "0":
+                break
+
+            MISSIONS = {
+                "1": {
+                    "name": "Riverbank Timber Felling Gang",
+                    "item_key": "timber",
+                    "item_name": "poplar and tamarisk timber logs (Iṣu)",
+                    "silver_cost": 5.0,
+                    "grain_cost": 20.0,
+                    "base_min": 25.0,
+                    "base_max": 50.0,
+                    "desc": "A team of 8 woodcutters with bronze axes cleared wild poplar groves along the Euphrates banks."
+                },
+                "2": {
+                    "name": "Marsh Reed Harvesting Crew",
+                    "item_key": "reeds",
+                    "item_name": "bundles of thick marsh reeds (Qanû)",
+                    "silver_cost": 2.0,
+                    "grain_cost": 15.0,
+                    "base_min": 120.0,
+                    "base_max": 250.0,
+                    "desc": "Sickle-wielding marsh harvesters reaped and bundled dense reed thickets along canal channels."
+                },
+                "3": {
+                    "name": "Mudbrick Molding & Silt Crew",
+                    "item_key": "mudbrick",
+                    "item_name": "sun-dried alluvial mudbricks (Tīdu)",
+                    "silver_cost": 3.5,
+                    "grain_cost": 15.0,
+                    "base_min": 80.0,
+                    "base_max": 180.0,
+                    "desc": "Laborers dredged alluvium from the canal beds and packed it into rectangular wooden brick molds."
+                },
+                "4": {
+                    "name": "Pastoral Dung Fuel Sweepers",
+                    "item_key": "animal_dung",
+                    "item_name": "dried animal dung fuel cakes (Kibrītu)",
+                    "silver_cost": 1.5,
+                    "grain_cost": 10.0,
+                    "base_min": 150.0,
+                    "base_max": 300.0,
+                    "desc": "Sweepers swept the sheep grazing commons and packed dried dung into combustible fuel cakes."
+                },
+                "5": {
+                    "name": "Wetland Herb Pickers",
+                    "item_key": "cress_and_mustard",
+                    "silver_cost": 2.5,
+                    "grain_cost": 15.0,
+                    "base_min": 30.0,
+                    "base_max": 60.0,
+                    "desc": "Herbalists gathered pungent watercress leaves and threshed bags of wild mustard seeds."
+                },
+                "6": {
+                    "name": "Euphrates Fisherman Flotilla",
+                    "item_key": "dried_fish",
+                    "item_name": "salted river carp and catfish (Nūnu)",
+                    "silver_cost": 3.0,
+                    "grain_cost": 15.0,
+                    "base_min": 60.0,
+                    "base_max": 140.0,
+                    "desc": "Crews in bitumen-coated coracles swept large linen nets through the deep Euphrates channels."
+                },
+                "7": {
+                    "name": "Bitumen Seep Hauling Train",
+                    "item_key": "bitumen",
+                    "item_name": "jars of heavy petroleum pitch (Ittû)",
+                    "silver_cost": 4.0,
+                    "grain_cost": 20.0,
+                    "base_min": 30.0,
+                    "base_max": 70.0,
+                    "desc": "Haulers dug asphalt from natural oil seeps and hauled sealed clay jars back to your storehouse."
+                }
+            }
+
+            if c_act in MISSIONS:
+                m = MISSIONS[c_act]
+                silv_req = m["silver_cost"]
+                grain_req = m["grain_cost"]
+
+                if self.player.wallet.silver_shekels < silv_req:
+                    print(f" [!] Insufficient silver! You need {silv_req:.2f} silver shekels for wages (You hold {self.player.wallet.silver_shekels:.2f}).")
+                    continue
+                if self.player.wallet.barley_qa < grain_req:
+                    print(f" [!] Insufficient grain rations! You need {grain_req:.0f} qa barley to provision the gang (You hold {self.player.wallet.barley_qa:.0f} qa).")
+                    continue
+
+                # Deduct wages & rations
+                self.player.wallet.spend_silver(silv_req)
+                self.player.wallet.spend_barley(grain_req)
+                self.player.inventory["barley"] = self.player.wallet.barley_qa
+                if self.player.inventory["barley"] <= 0:
+                    self.player.inventory.pop("barley", None)
+
+                # Multipliers: Draft oxen + Patrician/Governor status
+                ox_mult = 1.0 + (self.player.owned_oxen * 0.10)
+                status_mult = 1.15 if self.player.social_class == SocialClass.AWILUM else 1.0
+                civic_off = getattr(self.player, "civic_office", getattr(self.player, "office", None))
+                if civic_off and str(civic_off) != "Private Citizen":
+                    status_mult += 0.10
+
+                if m["item_key"] == "cress_and_mustard":
+                    q_cress = round(random.uniform(30.0, 60.0) * ox_mult * status_mult, 1)
+                    q_must = round(random.uniform(20.0, 40.0) * ox_mult * status_mult, 1)
+                    self.player.inventory["cress"] = self.player.inventory.get("cress", 0.0) + q_cress
+                    self.player.inventory["mustard"] = self.player.inventory.get("mustard", 0.0) + q_must
+                    yield_desc = f"{q_cress:.1f} bundles of wild cress (Sahlû) and {q_must:.1f} bags of mustard (Kasû)"
+                else:
+                    qty = round(random.uniform(m["base_min"], m["base_max"]) * ox_mult * status_mult, 1)
+                    self.player.inventory[m["item_key"]] = self.player.inventory.get(m["item_key"], 0.0) + qty
+                    yield_desc = f"{qty:.1f} {m['item_name']}"
+
+                # Takes 1.0 hour for overseer briefing & gate intake; 0% energy from player
+                self.advance_hours(1.0)
+
+                print("\n" + "=" * 70)
+                print(f" [+] CORVÉE DISPATCH SUCCESSFUL: {m['name'].upper()}!")
+                print("=" * 70)
+                print(f"     Overseer Briefing: 1.0 hour elapsed. Player Energy spent: 0% (Laborers performed all sweat).")
+                print(f"     Expenditures:      Paid {silv_req:.2f} silver statutory wages | Provisioned {grain_req:.0f} qa barley.")
+                print(f"     Field Report:      {m['desc']}")
+                print(f"     Cargo Delivered:   Ox-carts delivered {yield_desc} straight to your estate sacks!")
+                print("=" * 70)
 
     def handle_workshop(self):
         """Artisan workshops, batch manufacturing, facility upgrades & labor wage management."""

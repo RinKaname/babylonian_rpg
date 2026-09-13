@@ -39,6 +39,18 @@
 | **Forage Fish**  | Euphrates River Netting (*Nūnu*)| *None* | 8–20 Dried Carp & Fish | 4.0h | 20% | Staple Protein & Ration Supply |
 | **Forage Bitumen**| Hit Bitumen Seep Hauling (*Ittû*)| *None* | 4–10 Bitumen Pitch | 4.0h | 25% | Caulking, Waterproofing, Mortar |
 
+### 1b. Patrician & Governor Corvée Labor Gangs (*Tupšikku / Agrū* under Code §§ 273–274)
+Prosperous Awīlum patricians and Governors requisition day-laborers with pack beasts and ox-carts to harvest alluvial commons in industrial bulk:
+
+| Corvée Expedition | Task | Statutory Wages & Rations | Industrial Bulk Yield | Time | Player Energy | Special Bonuses |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **[1] Timber Felling Crew** | Felling River Poplar/Tamarisk (*Iṣu*) | 5.0 Silver + 20 qa Barley | **25–50 Timber Logs** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[2] Reed Harvesters** | Reaping Dense Marsh Reeds (*Qanû*) | 2.0 Silver + 15 qa Barley | **120–250 Marsh Reeds** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[3] Mudbrick Molding** | Dredging Silt & Kiln Molds (*Tīdu*) | 3.5 Silver + 15 qa Barley | **80–180 Mudbricks** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[4] Dung Fuel Sweepers** | Sweeping Grazing Plains (*Kibrītu*)| 1.5 Silver + 10 qa Barley | **150–300 Dung Cakes** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[5] Wetland Herb Crew** | Foraging Wild Cress & Mustard | 2.5 Silver + 15 qa Barley | **30–60 Cress, 20–40 Mustard**| 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[6] Fisher Flotilla** | Coracle Channel Netting (*Nūnu*) | 3.0 Silver + 15 qa Barley | **60–140 Dried Fish** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[7] Bitumen Haulers** | Natural Seep Extraction (*Ittû*) | 4.0 Silver + 20 qa Barley | **30–70 Bitumen Pitch** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
 
 ---
 
