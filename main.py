@@ -1315,6 +1315,9 @@ class BabylonianGame:
                     else:
                         print(" [+] Inspected public facilities and verified weights and measures.")
                 elif c_act == "2":
+                    for o_title in OfficeTitle:
+                        if self.politics.office_holders.get(o_title) == self.player:
+                            self.politics.office_holders[o_title] = None
                     self.player.civic_office = None
                     print(" [+] You stepped down from civic office.")
                 elif c_act == "0":
@@ -1885,6 +1888,11 @@ class BabylonianGame:
             self.player.owned_oxen = p_data["owned_oxen"]
             self.player.owned_sheep = p_data["owned_sheep"]
             self.player.civic_office = p_data["civic_office"]
+            if self.player.civic_office:
+                for o_title in OfficeTitle:
+                    if o_title.value == self.player.civic_office or o_title.name == self.player.civic_office:
+                        self.politics.office_holders[o_title] = self.player
+                        break
             self.player.reputation = p_data["reputation"]
             self.player.inventory = p_data.get("inventory", {})
 

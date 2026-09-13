@@ -1,6 +1,12 @@
 {
   "year": 1,
   "season_idx": 0,
+  "day": 1,
+  "hour": 8.0,
+  "days_per_season": 14,
+  "workshop_tier": 1,
+  "hired_artisans": 0,
+  "wage_policy": "STATUTORY",
   "news_ticker": [
     "King Hammurabi has inscribed his righteous laws upon a diorite stele at the temple of Shamash.",
     "Euphrates waters are calm. Canals across the southern plains are open for irrigation."
@@ -69,6 +75,27 @@
       "principal": 0.0
     }
   ],
+  "army": {
+    "regiment_counter": 3,
+    "regiments": [
+      {
+        "id": "reg_001",
+        "unit_type": "REDU",
+        "soldiers_count": 12,
+        "is_equipped": true,
+        "experience_level": 2,
+        "stationed_gate": "Ishtar Gate (North / Processional Way)"
+      },
+      {
+        "id": "reg_002",
+        "unit_type": "BAIRU",
+        "soldiers_count": 10,
+        "is_equipped": true,
+        "experience_level": 2,
+        "stationed_gate": "Gate of Shamash (South / Canals & Fields)"
+      }
+    ]
+  },
   "market_prices": {
     "barley": 0.5,
     "emmer": 0.85,
@@ -97,6 +124,7 @@
     "bronze_tools": 5.0,
     "perfume": 15.0,
     "cylinder_seal": 20.0,
+    "bronze_weapons": 8.0,
     "composite_bow": 35.0,
     "war_chariot": 120.0
   }
