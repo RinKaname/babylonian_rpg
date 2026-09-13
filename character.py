@@ -295,23 +295,35 @@ class Character:
     # Market Trading & Inventory Operations
     # --------------------------------------------------------------------------
 
-    def buy_good(self, good_id: str, quantity: float, market: Market, registry: GoodsRegistry) -> bool:
-        """Buys a quantity of goods from the public market using weighed silver."""
+    def buy_good(self, good_id: str, quantity: float, market: Market, registry: GoodsRegistry, sales_tax_rate: float = 0.0) -> bool:
+        """Buys a quantity of goods from the public market using weighed silver, drawing from warehouse stock."""
+        if quantity <= 0:
+            return False
+
+        avail_stock = market.get_stock(good_id)
+        if avail_stock <= 0:
+            return False
+
+        buy_qty = min(quantity, avail_stock)
         unit_price = market.get_price(good_id)
-        total_cost = unit_price * quantity
+        base_cost = unit_price * buy_qty
+        tax = base_cost * max(0.0, sales_tax_rate)
+        total_cost = base_cost + tax
 
         if self.wallet.spend_silver(total_cost):
-            market.submit_buy_order(good_id, quantity)
+            actual_bought = market.execute_buy(good_id, buy_qty)
             if good_id == "barley":
-                self.wallet.add_barley(quantity)
+                self.wallet.add_barley(actual_bought)
                 self.inventory["barley"] = self.wallet.barley_qa
             else:
-                self.inventory[good_id] = self.inventory.get(good_id, 0.0) + quantity
+                self.inventory[good_id] = self.inventory.get(good_id, 0.0) + actual_bought
             return True
         return False
 
     def sell_good(self, good_id: str, quantity: float, market: Market, registry: GoodsRegistry) -> bool:
-        """Sells an inventory good to the market, collecting silver."""
+        """Sells an inventory good to the market, collecting silver and adding to warehouse stock."""
+        if quantity <= 0:
+            return False
         if good_id == "barley":
             if self.wallet.barley_qa >= quantity:
                 unit_price = market.get_price(good_id)
@@ -320,7 +332,7 @@ class Character:
                 self.inventory["barley"] = self.wallet.barley_qa
                 if self.inventory["barley"] <= 0:
                     del self.inventory["barley"]
-                market.submit_sell_order(good_id, quantity)
+                market.execute_sell(good_id, quantity)
                 self.wallet.add_silver(revenue)
                 return True
             return False
@@ -331,7 +343,7 @@ class Character:
                 self.inventory[good_id] -= quantity
                 if self.inventory[good_id] <= 0:
                     del self.inventory[good_id]
-                market.submit_sell_order(good_id, quantity)
+                market.execute_sell(good_id, quantity)
                 self.wallet.add_silver(revenue)
                 return True
             return False

@@ -333,6 +333,55 @@ class TacticalBattleEngine:
 # ==============================================================================
 # 4. The Master Babylonian Warfare Engine
 # ==============================================================================
+# 5. Municipal Tax & Customs Decrees (Miksu & Šibšu Policies)
+# ==============================================================================
+
+class TaxPolicy(Enum):
+    FREE_TRADE = "FREE_TRADE"          # Gate Toll: 0.50, Tithe: 5%, Sales Tax: 0%, Honor: +0.2/day
+    STATUTORY = "STATUTORY"            # Gate Toll: 1.80, Tithe: 10%, Sales Tax: 5%, Honor: 0.0/day
+    HEAVY_PATRICIAN = "HEAVY_PATRICIAN"# Gate Toll: 4.50, Tithe: 20%, Sales Tax: 15%, Honor: -0.3/day
+    WAR_TITHE = "WAR_TITHE"            # Gate Toll: 8.00, Tithe: 30%, Sales Tax: 25%, Honor: -1.0/day
+
+
+TAX_POLICIES_CONFIG: Dict[str, Dict[str, Any]] = {
+    "FREE_TRADE": {
+        "name": "Kārum Pētû (Open Harbor / Free Trade)",
+        "gate_toll_daily": 0.50,
+        "harvest_tithe_rate": 0.05,
+        "sales_tax_rate": 0.00,
+        "honor_daily": 0.2,
+        "desc": "Removes trade restrictions and slashes customs duties. Hailed by Tamkarum merchants (+0.2 Honor/day).",
+    },
+    "STATUTORY": {
+        "name": "Simdat Šarrim (Royal Statutory Standard)",
+        "gate_toll_daily": 1.80,
+        "harvest_tithe_rate": 0.10,
+        "sales_tax_rate": 0.05,
+        "honor_daily": 0.0,
+        "desc": "Standard historical tithes and gate tolls codified by King Hammurabi. Balanced civic finances.",
+    },
+    "HEAVY_PATRICIAN": {
+        "name": "Miksu Dannu (Heavy Patrician Customs)",
+        "gate_toll_daily": 4.50,
+        "harvest_tithe_rate": 0.20,
+        "sales_tax_rate": 0.15,
+        "honor_daily": -0.3,
+        "desc": "Heavy tariffs and grain tithes levied to swell municipal silos and military war chests (-0.3 Honor/day).",
+    },
+    "WAR_TITHE": {
+        "name": "Nīš Bābili (War Emergency Defense Tithe)",
+        "gate_toll_daily": 8.00,
+        "harvest_tithe_rate": 0.30,
+        "sales_tax_rate": 0.25,
+        "honor_daily": -1.0,
+        "desc": "Total civic mobilization. Maximum extraction of grain and silver for garrison survival (-1.0 Honor/day).",
+    }
+}
+
+
+# ==============================================================================
+# 6. Babylonian Warfare & Garrison Engine
+# ==============================================================================
 
 class BabylonianWarEngine:
     """
@@ -349,10 +398,24 @@ class BabylonianWarEngine:
         # Babylon Municipal Coffers & Public Granary (Bīt Ālī)
         self.city_treasury_silver: float = 250.0   # Civic silver reserves
         self.city_granary_barley: float = 3000.0   # Public grain silos (10 gur = 3,000 qa)
+        self.tax_policy: str = "STATUTORY"         # Current Mayoral tax decree
         self.gate_toll_revenue_daily: float = 1.80 # Daily caravan customs from 4 Great Gates
 
         # Initial starter garrison stationed at the gates
         self._initialize_starter_garrison()
+
+    def set_tax_policy(self, policy_key: str) -> Tuple[bool, str]:
+        """Sets the official Mayoral taxation and customs decree for Babylon."""
+        if policy_key not in TAX_POLICIES_CONFIG:
+            return False, f"Unknown tax policy decree '{policy_key}'."
+        self.tax_policy = policy_key
+        cfg = TAX_POLICIES_CONFIG[policy_key]
+        self.gate_toll_revenue_daily = cfg["gate_toll_daily"]
+        return True, f" [+] Mayoral Decree Promulgated: {cfg['name']} is now enacted across Babylon!\n     Gate Toll: {cfg['gate_toll_daily']:.2f} silver/day | Harvest Tithe: {cfg['harvest_tithe_rate']*100:.0f}% | Market Duty: {cfg['sales_tax_rate']*100:.0f}%."
+
+    def get_tax_rates(self) -> Dict[str, Any]:
+        """Returns the active taxation rates and policy details."""
+        return TAX_POLICIES_CONFIG.get(self.tax_policy, TAX_POLICIES_CONFIG["STATUTORY"])
 
     def _initialize_starter_garrison(self):
         """Populates Babylon with a baseline municipal guard."""
@@ -516,6 +579,12 @@ class BabylonianWarEngine:
         """
         # 1. Inflow: Caravans & merchants pay customs tariffs into municipal treasury
         self.city_treasury_silver += self.gate_toll_revenue_daily
+
+        # Apply daily Mayoral tax honor drift if player holds Governor office
+        if player and player.civic_office and "Governor" in player.civic_office:
+            h_drift = self.get_tax_rates().get("honor_daily", 0.0)
+            if h_drift != 0.0:
+                player.reputation = max(0.0, min(100.0, player.reputation + h_drift))
 
         grain_needed, silver_needed = self.calculate_daily_upkeep()
         if not self.standing_army:

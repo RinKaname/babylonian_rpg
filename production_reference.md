@@ -25,12 +25,20 @@
 | **[14] Potter's Kiln**| Clay Vessels (*karpatu*) | 2 Reeds or Dung Fuel | 4 Clay Vessels | 2.5h | 8–12% | Food Storage & Rations |
 | **[15] Seal Engraver**| Carved Cylinder Seal (*kunukku*)| 1 Bronze Tools + 2 Silv | 1 Cylinder Seal | 5.0h | 8–12% | Legal Seals & High Resale |
 | **[16] Royal Lapidary**| Gold-Mounted Filigree | 20.0 Silver Shekels | +4 Seal Prestige | 4.0h | 15% | Unlocks City Governor Office |
-| **Autumn Farm** | Sowing & Plowing | 10.0 qa Barley / Acre | Fields Sowed | 6.0h | 30% | Agriculture Skill (+1) |
+| **Autumn Farm** | Sowing & Plowing | 10.0 qa Barley / Acre | Fields Sowed (Incremental)| 6.0h | 30% | Agriculture Skill (+1) |
 | **Winter Farm** | Canal Silt Dredging | *None* | Canals Cleared | 6.0h | 25% | Agriculture Skill (+1) |
-| **Spring Farm** | The Great Harvest | *None* (Harvests fields) | 250–380 qa/Acre (+Oxen) | 8.0h | 45% | Massive Barley Yield |
+| **Spring Farm** | The Great Harvest | *None* (Reaps sowed land) | 250–380 qa/Acre (-Šibšu Tithe)| 8.0h | 45% | Massive Barley Yield (Once/Year) |
 | **Spring Sheep** | Wool Shearing | *None* (Automatic) | 2.5 Talents Wool / Sheep | Instant | 0% | Raw Wool Inventory |
 | **Summer Farm** | Date Palm Foraging | *None* | 5–15 Baskets Dates | 4.0h | 20% | Food & Sugar Supply |
 | **Corvée Labor** | Royal Canal Digging | *None* | 5 grains silver $\times$ CPI | 8.0h | 30% | Statutory Wage Earnings |
+| **Forage Timber**| Riverbank Woodcutting (*Iṣu*)| *None* | 2–5 Poplar/Tamarisk Logs | 4.5h | 30% | Domestic Wood for Bows & Chariots|
+| **Forage Reeds** | Marsh Reed Cutting (*Qanû*) | *None* | 15–35 Reed Bundles | 3.0h | 15% | Brewing, Kiln Fuel, Mudbrick |
+| **Forage Silt**  | River Clay Digging (*Tīdu*) | *None* | 10–25 Mudbrick Clay | 4.0h | 25% | Sun-Dried Masonry & Pottery |
+| **Forage Dung**  | Pastoral Dung Cakes (*Kibrītu*)| *None* | 20–45 Dung Fuel Cakes | 3.0h | 15% | Kiln & Domestic Fuel |
+| **Forage Herbs** | Wild Cress & Mustard (*Sahlû*)| *None* | 3–8 Cress, 2–5 Mustard | 3.0h | 15% | High-Value CPI Cash Food & Medicine|
+| **Forage Fish**  | Euphrates River Netting (*Nūnu*)| *None* | 8–20 Dried Carp & Fish | 4.0h | 20% | Staple Protein & Ration Supply |
+| **Forage Bitumen**| Hit Bitumen Seep Hauling (*Ittû*)| *None* | 4–10 Bitumen Pitch | 4.0h | 25% | Caulking, Waterproofing, Mortar |
+
 
 ---
 
@@ -209,3 +217,75 @@ Babylon operates on an authentic **intraday clock** with dynamic energy depletio
 
 > [!TIP]
 > **Stamina Management:** If your energy drops below 20%, crafts and agricultural tasks become blocked. Keep flatbread (`bread`) and beer (`barley_beer`) in your inventory at all times to quench hunger and thirst without having to interrupt your labor!
+
+---
+
+## 7. The Alluvial Commons & Foraging Guide
+
+Foraging in the uncultivated areas around Babylon allows any citizen or destitute laborer to gather valuable raw resources without owning land or paying rental fees:
+
+| Commons Activity | Location / Method | Time & Energy | Expected Yield | Economic & Craft Utility |
+| :--- | :--- | :---: | :--- | :--- |
+| **Riverbank Timber Felling (*Iṣu*)** | Riverbank Poplar & Tamarisk Groves | 4.5h / 30% | 2–5 `timber` logs | Domestic wood source! Essential for Composite Bows (`composite_bow`) and War Chariots (`war_chariot`). |
+| **Marsh Reed Cutting (*Qanû*)** | Euphrates Oxbow Marshes | 3.0h / 15% | 15–35 `reeds` | Brewery beer filtration, kiln fuel, and sun-dried mudbrick binding. |
+| **River Clay Digging (*Tīdu*)** | Riverbed Silt & Mud Fluvial Flats | 4.0h / 25% | 10–25 `mudbrick` raw clay | Raw material for sun-dried mudbrick walls, clay tablet baking, and potter's vessels. |
+| **Pastoral Commons Dung Gathering (*Kibrītu*)** | Grazing Steppe outside City Walls | 3.0h / 15% | 20–45 `animal_dung` cakes | High-heat domestic hearth and industrial kiln fuel in a timber-scarce plain. |
+| **Wetland Herb Foraging (*Sahlû & Kasû*)** | Irrigation Ditch Embankments | 3.0h / 15% | 3–8 `cress` + 2–5 `mustard` | High-value CPI benchmark cash food. Sells at premium rates on the Kārum. |
+| **Euphrates River Netting (*Nūnu*)** | River Channels & Spillways | 4.0h / 20% | 8–20 `dried_fish` | Inexpensive protein for household sustenance or tavern resale. |
+| **Hit Petroleum Seep Hauling (*Ittû*)** | Surface Bitumen Pitch Springs | 4.0h / 25% | 4–10 `bitumen` pitch | Essential waterproofing mortar for canal dikes, kiln bricks, and river skiffs. |
+
+---
+
+## 8. Live Kārum Market Warehouse Stocks & Dynamic Spot Pricing
+
+Trading at the Kārum Quay follows a living, reactive commodity economy (*The Guild* & *Patrician* style):
+
+### 8.1 Physical Warehouse Stocks
+- Every commodity has a physical **Warehouse Inventory** (`stock`) and a long-term **Equilibrium Baseline** (`base_stock`).
+- **Buying Goods:** Deducts physical units from warehouse inventory. If stock drops to 0, the good becomes **OUT OF STOCK** until restocked.
+- **Selling Goods:** Adds physical units into the warehouse inventory, relieving shortages or flooding the market.
+
+### 8.2 Dynamic Spot Price Formula
+$$\text{Imbalance} = \frac{\text{BaseStock} - \text{Stock}}{\max(\text{BaseStock}, 1.0)}$$
+$$\text{Price Multiplier} = \text{clamp}\left(0.25,\; 2.25,\; 1.0 + 0.85 \times \text{Imbalance}\right)$$
+$$\text{Spot Price} = \text{round}\left(\text{BasePrice} \times \text{Price Multiplier},\; 3\right)$$
+
+- **Severe Shortage Condition:** Triggered whenever $\text{Stock} \le 10\% \times \text{BaseStock}$. Spot prices surge up to **+125%** ($2.25\times$).
+- **Market Flood Glut:** Triggered when players or caravans flood the market with excess stock. Prices collapse toward a floor of **-75%** ($0.25\times$).
+- **Macroeconomic Restocking Drift:** Each seasonal cycle, provincial farmers, fishermen, and foreign merchant pack-trains naturally replenish **15%** of depleted warehouse inventories.
+
+---
+
+## 9. Mayoral Tax & Customs Decrees (*Miksu & Šibšu*)
+
+As Governor (*Rabiānum*) of Babylon, you hold executive authority to decree municipal taxation and tariffs:
+
+| Decree | Akkadian Name | Gate Tolls (Daily) | Harvest Tithe (*Šibšu*) | Market Duty (*Miksu*) | Daily Honor | Strategic Purpose |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **Free Trade** | *Kārum Pētû* | +0.50 silv/day | **5%** Grain Tithe | **0%** Duty | **+0.2 / day** | Maximizes merchant acclaim; lowest consumer prices; attracts commerce. |
+| **Statutory Standard** | *Simdat Šarrim* | +1.80 silv/day | **10%** Grain Tithe | **5%** Duty | **0.0 / day** | Standard historic Hammurabi tax regime. Balanced civic treasury revenue. |
+| **Heavy Patrician** | *Miksu Dannu* | +4.50 silv/day | **20%** Grain Tithe | **15%** Duty | **-0.3 / day** | Fills city coffers and granaries rapidly; higher consumer prices. |
+| **War Emergency** | *Nīš Bābili* | +8.00 silv/day | **30%** Grain Tithe | **25%** Duty | **-1.0 / day** | Maximum military extraction for defense; stirs unrest in the streets. |
+
+- **Civic Remittance:** Market duties paid by traders are deposited directly into the **Public Civic Treasury (*Bīt Ālī*)**.
+- **Public Silo Tithes:** Harvest grain tithes are threshed and deposited directly into the **Municipal Silos** to feed the city garrison.
+
+---
+
+## 10. Agricultural Year & Incremental Sowing System
+
+The farming subsystem realistically tracks seasonal field states to eliminate infinite harvest exploits:
+
+1. **Autumn Plowing & Sowing (Incremental):**
+   - Sowing requires **10 qa seed barley per acre**.
+   - The game tracks `owned_land_acres` and `sowed_acres`.
+   - If you sow 10 acres, and then purchase 5 more acres, you **only plow and sow the remaining 5 unseeded acres**, without having to re-sow or pay for existing crops again!
+2. **Winter Canal Maintenance:**
+   - Clears silt and protects the dikes surrounding your sowed acreage from river floods.
+3. **Spring Harvest (Single Annual Reaping):**
+   - Fields can only be harvested **once per agricultural year** (`has_harvested_spring = True`).
+   - Yield is calculated strictly on **seeded land** (`sowed_acres`). Land purchased in Spring without prior Autumn sowing produces zero grain until the next cycle.
+   - The municipal tithe (*Šibšu*) is automatically remitted to the city silos.
+4. **Summer Reset:**
+   - Field stubble is grazed, and the seasonal harvest flag is reset for the next agricultural year.
+

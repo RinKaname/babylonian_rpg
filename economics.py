@@ -183,14 +183,67 @@ class GoodsRegistry:
 
 
 # ==============================================================================
-# 3. Victoria 3 Flow-Market Engine
+# 3. Victoria 3 Flow-Market & Kārum Warehouse Engine
 # ==============================================================================
+
+# Baseline equilibrium warehouse stocks for Mesopotamian commodities
+DEFAULT_BASE_STOCKS: Dict[str, float] = {
+    # Agricultural & Primary Food Staples
+    "barley": 2500.0,
+    "emmer": 400.0,
+    "dates": 700.0,
+    "bread": 500.0,
+    "sweet_pastry": 120.0,
+    "dried_fish": 500.0,
+    "mustard": 150.0,
+    "cress": 150.0,
+    # Drinks
+    "barley_beer": 400.0,
+    "spelt_beer": 150.0,
+    "date_wine": 80.0,
+    # Oils & Fuel
+    "sesame": 400.0,
+    "sesame_oil": 300.0,
+    "animal_dung": 700.0,
+    # Textiles
+    "raw_wool": 600.0,
+    "flax": 250.0,
+    "woolen_cloth": 300.0,
+    "fine_linen": 100.0,
+    # Building & Raw Materials
+    "mudbrick": 1000.0,
+    "kiln_brick": 350.0,
+    "bitumen": 300.0,
+    "reeds": 800.0,
+    "timber": 200.0,
+    # Manufactures & Crafts
+    "pottery": 350.0,
+    "bronze_tools": 180.0,
+    "glassware": 60.0,
+    # Luxury & Status
+    "perfume": 100.0,
+    "cylinder_seal": 35.0,
+    "jewelry": 25.0,
+    # Armaments
+    "bronze_weapons": 45.0,
+    "composite_bow": 25.0,
+    "war_chariot": 12.0,
+    # Raw Metals & Minerals
+    "copper_ore": 150.0,
+    "tin": 80.0,
+    "silver": 60.0,
+    "gold": 20.0,
+    "stone": 100.0
+}
+
 
 @dataclass
 class MarketGoodState:
     good_id: str
     base_price: float
     current_price: float
+    base_stock: float = 100.0
+    stock: float = 100.0
     buy_orders: float = 0.0
     sell_orders: float = 0.0
     shortage: bool = False
@@ -199,54 +252,108 @@ class MarketGoodState:
 
 class Market:
     """
-    Simulates a Victoria 3-style flow-based commodity market.
-    Prices adjust dynamically between -75% and +75% of base price based on Buy/Sell order balance.
+    Simulates a living commodity market with physical warehouse stock at the Kārum Quay.
+    Prices adjust dynamically based on warehouse inventory relative to equilibrium base stock:
+    Price = BasePrice * clamp(0.25, 2.25, 1.0 + 0.85 * (BaseStock - Stock) / BaseStock).
+    Buying depletes stock and raises spot prices; selling/flooding increases stock and depresses prices.
     """
     def __init__(self, registry: GoodsRegistry):
         self.registry = registry
         self.goods: Dict[str, MarketGoodState] = {}
         for g_id, good in registry.goods.items():
+            base_stk = DEFAULT_BASE_STOCKS.get(g_id, 100.0)
             self.goods[g_id] = MarketGoodState(
                 good_id=g_id,
                 base_price=good.base_price,
                 current_price=good.base_price,
+                base_stock=base_stk,
+                stock=base_stk,
                 price_history=[good.base_price]
             )
 
+    def calculate_price(self, good_id: str) -> float:
+        """
+        Calculates dynamic spot market price based on current warehouse stock.
+        Price rises sharply when warehouse is depleted (shortage/famine), and drops when flooded.
+        """
+        state = self.goods[good_id]
+        imbalance = (state.base_stock - state.stock) / max(state.base_stock, 1.0)
+        multiplier = 1.0 + 0.85 * imbalance
+        multiplier = max(0.25, min(2.25, multiplier))
+        return round(state.base_price * multiplier, 3)
+
+    def get_price(self, good_id: str) -> float:
+        if good_id not in self.goods:
+            return 1.0
+        return self.calculate_price(good_id)
+
+    def get_stock(self, good_id: str) -> float:
+        if good_id not in self.goods:
+            return 0.0
+        return round(self.goods[good_id].stock, 1)
+
+    def execute_buy(self, good_id: str, volume: float) -> float:
+        """
+        Executes a physical purchase from the Kārum warehouse.
+        Deducts stock, triggers shortage if stock is critical (<=10%), and updates spot price.
+        Returns actual volume purchased (clamped to available stock).
+        """
+        if good_id not in self.goods or volume <= 0:
+            return 0.0
+        state = self.goods[good_id]
+        actual_vol = min(volume, state.stock)
+        state.stock = max(0.0, state.stock - actual_vol)
+        state.shortage = (state.stock <= 0.10 * state.base_stock)
+        state.current_price = self.calculate_price(good_id)
+        return actual_vol
+
+    def execute_sell(self, good_id: str, volume: float) -> float:
+        """
+        Executes a physical deposit/sale into the Kārum warehouse.
+        Increases stock, relieves shortages, and lowers spot price.
+        Returns actual volume sold.
+        """
+        if good_id not in self.goods or volume <= 0:
+            return 0.0
+        state = self.goods[good_id]
+        state.stock += volume
+        state.shortage = (state.stock <= 0.10 * state.base_stock)
+        state.current_price = self.calculate_price(good_id)
+        return volume
+
     def submit_buy_order(self, good_id: str, volume: float):
-        """Submit a demand request for a volume of goods."""
+        """Submit a macro demand request (e.g. Pop consumption) for a volume of goods."""
         if good_id in self.goods and volume > 0:
             self.goods[good_id].buy_orders += volume
 
     def submit_sell_order(self, good_id: str, volume: float):
-        """Submit a supply offering for a volume of goods."""
+        """Submit a macro supply offering (e.g. building outputs, caravan imports)."""
         if good_id in self.goods and volume > 0:
             self.goods[good_id].sell_orders += volume
 
     def resolve_market(self):
         """
-        Calculates clearing prices for all goods based on flow equilibrium:
-        Price = BasePrice * (1.0 + 0.75 * (Buy - Sell) / max(Buy, Sell))
+        Advances the market across a macro seasonal or monthly cycle:
+        1. Incorporates flow demand (pop consumption) and supply (workshop/farm outputs) into physical warehouse stock.
+        2. Applies natural equilibrium replenishment drift from incoming caravans and provincial rural barges.
+        3. Recalculates spot prices and updates price history.
         """
         for g_id, state in self.goods.items():
             B = state.buy_orders
             S = state.sell_orders
 
-            if B == 0 and S == 0:
-                # Idle market drift back towards base price
-                new_price = state.current_price + (state.base_price - state.current_price) * 0.10
-                state.shortage = False
-            else:
-                max_vol = max(B, S, 1e-4)
-                imbalance = (B - S) / max_vol
-                # Clamped between -75% and +75%
-                multiplier = 1.0 + 0.75 * imbalance
-                multiplier = max(0.25, min(1.75, multiplier))
-                new_price = round(state.base_price * multiplier, 3)
+            # Flow impact on physical warehouse inventory
+            net_flow = S - B
+            state.stock = max(0.0, state.stock + net_flow)
 
-                # Severe shortage condition if demand > 150% of supply
-                state.shortage = (B > 1.5 * max(S, 0.1))
+            # Natural market replenishment drift towards equilibrium (15% per cycle)
+            # Simulates rural farmers, fishermen, and foreign merchant pack-trains arriving at the quays
+            drift = (state.base_stock - state.stock) * 0.15
+            state.stock = max(0.0, state.stock + drift)
 
+            # Update shortage flag & spot clearing price
+            state.shortage = (state.stock <= 0.10 * state.base_stock)
+            new_price = self.calculate_price(g_id)
             state.current_price = new_price
             state.price_history.append(new_price)
             if len(state.price_history) > 50:
@@ -256,10 +363,9 @@ class Market:
             state.buy_orders = 0.0
             state.sell_orders = 0.0
 
-    def get_price(self, good_id: str) -> float:
-        return self.goods[good_id].current_price
-
     def is_in_shortage(self, good_id: str) -> bool:
+        if good_id not in self.goods:
+            return False
         return self.goods[good_id].shortage
 
     def calculate_cpi(self) -> float:
