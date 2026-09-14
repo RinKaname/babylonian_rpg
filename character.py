@@ -184,6 +184,15 @@ class Character:
         self._initialize_starting_kit()
 
     @property
+    def honor(self) -> float:
+        """Honor / civic prestige (synonymous with reputation)."""
+        return self.reputation
+
+    @honor.setter
+    def honor(self, val: float):
+        self.reputation = val
+
+    @property
     def full_name(self) -> str:
         if not self.patronymic:
             return self.name

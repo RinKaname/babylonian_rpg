@@ -2039,11 +2039,17 @@ class BabylonianGame:
             print(" [3] Campaign for Dayyānum (City Magistrate & Judge) - Needs Awilum patrician class")
             print(" [4] Campaign for Šangû (High Priest of Esagila Temple) - Sacred office")
             print(" [5] Campaign for Rabiānum (City Governor & Mayor) - Highest executive office (Awilum)")
-            if self.player.social_class != SocialClass.AWILUM:
+            if self.player.social_class == SocialClass.WARDUM:
+                print(" [M] Purchase Statutory Manumission (20.0 Silver Shekels) - Rise to Muškēnum")
+            elif self.player.social_class != SocialClass.AWILUM:
                 print(" [6] Petition Council of Elders for Ennoblement to Awīlum (Patrician Class)")
             print(" [0] Return to City Square")
 
-            ch = input(f" Choose option [{'0-6' if self.player.social_class != SocialClass.AWILUM else '0-5'}]: ").strip()
+            opt_prompt = '0-5, M' if self.player.social_class == SocialClass.WARDUM else ('0-6' if self.player.social_class != SocialClass.AWILUM else '0-5')
+            ch = input(f" Choose option [{opt_prompt}]: ").strip()
+            if ch.upper() == "M" and self.player.social_class == SocialClass.WARDUM:
+                self.handle_justice()
+                continue
             if ch == "6" and self.player.social_class != SocialClass.AWILUM:
                 ok_ennoble, msg_ennoble = self.politics.petition_ennoblement_to_awilum(self.player, self.player_marriage_contract)
                 print("\n" + msg_ennoble)
@@ -2488,10 +2494,13 @@ class BabylonianGame:
             print(" [1] Prosecute Rim-Sin for charging >20% usury (Code § 88)")
             print(" [2] Prosecute Rim-Sin for canal dike negligence flooding your fields (Code §§ 53-55)")
             print(" [3] Demand the Sacred River Ordeal of Id (Divine Trial by the Euphrates)")
+            if self.player.social_class == SocialClass.WARDUM:
+                print(" [4] Purchase Statutory Manumission & Redemption (Code §§ 117, 175) - 20.0 Silver")
             print(" [0] Return to City Square")
             print("-" * 70)
 
-            act = input(" Choose legal proceeding [0-3]: ").strip()
+            act_range = "0-4" if self.player.social_class == SocialClass.WARDUM else "0-3"
+            act = input(f" Choose legal proceeding [{act_range}]: ").strip()
             if act == "1":
                 case = self.politics.file_lawsuit(
                     accuser=self.player,
@@ -2535,6 +2544,60 @@ class BabylonianGame:
                         print("     You swallow river silt, losing 40% health and suffering deep shame.")
                         self.player.health = max(10.0, self.player.health - 40.0)
                         self.player.reputation = max(10.0, self.player.reputation - 15.0)
+            elif act == "4":
+                if self.player.social_class != SocialClass.WARDUM:
+                    print("\n [!] You are already a free citizen of Babylon!")
+                    continue
+
+                redemption_price = 20.0
+                if self.player.wallet.silver_shekels < redemption_price:
+                    print(f"\n [!] You hold {self.player.wallet.silver_shekels:.2f} silver shekels. You need {redemption_price:.2f} silver for statutory redemption ransom.")
+                    continue
+
+                self.player.wallet.spend_silver(redemption_price)
+                self.player.social_class = SocialClass.MUSHKENUM
+                if not self.player.cylinder_seal:
+                    self.player.cylinder_seal = CylinderSeal(
+                        owner_name=self.player.full_name,
+                        material="Steatite",
+                        patron_deity="Shamash",
+                        prestige_rating=10
+                    )
+
+                manumit_id = f"freedom_{len(self.player.tablets)+1:03d}"
+                summary = (
+                    f"Manumission Charter (ṭuppi andurārim): {self.player.full_name} weighed {redemption_price:.1f} silver shekels "
+                    f"ransom before the Dayyānū judges at the Gate of Shamash. The debt is shattered like clay. "
+                    f"The slave-mark (abbuttum) is shaved from his brow; anointed with sacred cedar oil and enrolled as a "
+                    f"free citizen (Muškēnum) with full rights of property, legal contract, and court standing under King Hammurabi."
+                )
+                freedom_tablet = ClayTablet(
+                    id=manumit_id,
+                    doc_type=DocumentType.FREEDOM_CHARTER,
+                    summary=summary,
+                    parties_involved=[self.player.full_name, "Crown Tribunal of Shamash", "Royal Assembly of Babylon"],
+                    principal_silver=redemption_price,
+                    is_fulfilled=True
+                )
+                self.player.sign_tablet(freedom_tablet)
+                self.player.tablets.append(freedom_tablet)
+
+                self.player.honor = min(100.0, self.player.honor + 15.0)
+                self.player.reputation = min(100.0, self.player.reputation + 15.0)
+                self.advance_hours(1.0)
+
+                print("\n" + "=" * 74)
+                print("   SOLEMN MANUMISSION & EMANCIPATION AT THE GATE OF SHAMASH (ANDURĀRUM)")
+                print("=" * 74)
+                print(" The royal Dayyānū judges and temple priests assemble before the diorite stele.")
+                print(f" {self.player.full_name} steps forward and weighs {redemption_price:.2f} silver shekels upon the copper scale.")
+                print("\n 'He was a bondman in the eyes of the city; today his debt is shattered like dry clay!'")
+                print("\n [+] The barber of Shamash ceremonially shaves the slave-mark (abbuttum) from your brow!")
+                print(" [+] Anointed with sacred cedar oil and enrolled into the city rolls as a free commoner (Muškēnum)!")
+                print(" [+] Invested with your own carved Steatite Cylinder Seal (Servant of Shamash - Prestige 10)!")
+                print(" [+] Sealed Cuneiform Tablet of Manumission (ṭuppi andurārim) deposited in your archive!")
+                print(f" [+] Civic Honor elevated to {self.player.honor:.1f}/100!")
+                print("=" * 74)
             elif act == "0":
                 break
 
