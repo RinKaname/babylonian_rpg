@@ -35,7 +35,8 @@ from trade import TradeManager, TradeCorridor, TransportFleet, TransportType, Ca
 from politics import BabylonianPolitics, OfficeTitle, LawsuitCharge, JudicialCase, OFFICE_CATALOG
 from war import (
     BabylonianWarEngine, UnitType, SoldierRegiment, CityGate,
-    BattleResult, UNIT_CATALOG, TaxPolicy, TAX_POLICIES_CONFIG
+    BattleResult, UNIT_CATALOG, TaxPolicy, TAX_POLICIES_CONFIG,
+    MiningOutpost
 )
 
 
@@ -585,10 +586,11 @@ class BabylonianGame:
             print(" [6] Municipal Corvée Wage Labor (Code §§ 273-274: 5 grains silver/day)")
             print(" [7] Forage & Gather Alluvial Commons (Timber, Reeds, Silt, Dung, Cress, Fish, Bitumen)")
             print(" [8] Mobilize Corvée Labor Gangs (Tupšikku / Agrū Bulk Gathering - 0% Energy)")
+            print(" [9] Imperial Mountain Mining Outpost (Halṣum Šadî - Zagros Foothills)")
             print(" [0] Return to City Square")
             print("-" * 70)
 
-            act = input(" Choose action [0-8]: ").strip()
+            act = input(" Choose action [0-9]: ").strip()
 
             if act == "1":
                 # Seasonal agriculture operations
@@ -1052,6 +1054,9 @@ class BabylonianGame:
                 print(f"     Field Report:      {m['desc']}")
                 print(f"     Cargo Delivered:   Ox-carts delivered {yield_desc} straight to your estate sacks!")
                 print("=" * 70)
+
+            elif act == "9":
+                self.handle_mining_outpost()
 
     def handle_workshop(self):
         """Artisan workshops, batch manufacturing, facility upgrades & labor wage management."""
@@ -1964,10 +1969,11 @@ class BabylonianGame:
             print(" [6] Municipal Granary Famine Relief (Open public silos for commoners, gain Honor)")
             print(" [7] Petition Great King Hammurabi for Royal Misharum Debt Jubilee")
             print(" [8] Promulgate Municipal Tax & Customs Decrees (Miksu & Šibšu)")
+            print(" [9] Imperial Mountain Mining Outpost (Halṣum Šadî - Zagros Foothills)")
             print(" [0] Return to Civic Offices Menu")
             print("-" * 78)
 
-            gov_act = input(" Select executive order [0-8]: ").strip()
+            gov_act = input(" Select executive order [0-9]: ").strip()
 
             if gov_act == "0":
                 break
@@ -2174,6 +2180,169 @@ class BabylonianGame:
                     ok, msg = self.war_engine.set_tax_policy(pol_map[d_pick])
                     print("\n" + msg)
 
+            elif gov_act == "9":
+                self.handle_mining_outpost()
+
+    # --------------------------------------------------------------------------
+    # Imperial Mountain Mining Outpost (Halṣum Šadî) Command
+    # --------------------------------------------------------------------------
+
+    def handle_mining_outpost(self):
+        """Imperial Mountain Mining Outpost (Halṣum Šadî) in the Zagros Foothills."""
+        while True:
+            outpost = self.war_engine.mining_outpost
+            is_gov = bool(self.player and self.player.civic_office and "Governor" in self.player.civic_office)
+            cleared_pass = self.war_engine.campaigns_completed.get(2, 0) > 0
+
+            # Stationed garrison info
+            garrison_reg = None
+            if outpost.garrisoned_regiment_id:
+                garrison_reg = next((r for r in self.war_engine.standing_army if r.id == outpost.garrisoned_regiment_id), None)
+                if not garrison_reg:
+                    outpost.garrisoned_regiment_id = None
+
+            print("\n" + "=" * 78)
+            print("        IMPERIAL MOUNTAIN MINING OUTPOST (HALṢUM ŠADÎ - ZAGROS)")
+            print("=" * 78)
+            status_tag = "ACTIVE & OPERATIONAL" if outpost.is_established else "UNFOUNDED / WILDERNESS"
+            print(f" Outpost Status:      [{status_tag}]")
+            if outpost.is_established:
+                print(f" Development Scale:   {outpost.tier_name}")
+                print(f" Extraction Force:    {outpost.miners_count} Miners (Seasonal Upkeep: {outpost.seasonal_upkeep[0]:.1f} silv, {outpost.seasonal_upkeep[1]:.0f} qa grain)")
+                if garrison_reg:
+                    print(f" Frontier Garrison:   {garrison_reg.id} ({garrison_reg.definition.name}, {garrison_reg.soldiers_count} men) [SECURE - 100% Haul Guarded]")
+                else:
+                    print(f" Frontier Garrison:   [NONE - DANGER!] Unguarded pits face 60% chance of Gutian raids (65% ore loss)!")
+                print(f" Cumulative Haul:     {outpost.total_copper_delivered:.1f} Copper Ore | {outpost.total_tin_delivered:.2f} Tin | {outpost.total_stone_delivered:.1f} Diorite Stone")
+                print(f" Defense Record:      {outpost.total_raids_repelled} Highland Raids Repelled | {outpost.total_raids_suffered} Ambush Losses Suffered")
+            else:
+                pass_status = "PACIFIED (25% Founding Discount)" if cleared_pass else "CONTESTED (Zagros brigands active)"
+                print(f" Mountain Corridor:   {pass_status}")
+                print(" Raw Metals Context:  Mesopotamia has zero native metal ore or stone bedrock.")
+                print("                      Establishing this outpost secures regular seasonal shipments of")
+                print("                      raw copper ore (erû), cassiterite tin (annaku), and diorite stone (abnu)!")
+
+            print("-" * 78)
+            print(f" Personal Estate Purse: {self.player.wallet.silver_shekels:7.2f} silver | {self.player.wallet.barley_qa:5.0f} qa barley")
+            if is_gov:
+                print(f" Municipal Treasury:    {self.war_engine.city_treasury_silver:7.2f} silver | {self.war_engine.city_granary_barley:5.0f} qa barley (Can co-fund outpost)")
+            print(f" Sacks Inventory:       {self.player.inventory.get('timber', 0.0):.1f} Timber | {self.player.inventory.get('bronze_tools', 0.0):.1f} Bronze Tools | {self.player.inventory.get('copper_ore', 0.0):.1f} Copper Ore | {self.player.inventory.get('tin', 0.0):.2f} Tin | {self.player.inventory.get('stone', 0.0):.1f} Stone")
+            print("-" * 78)
+
+            if not outpost.is_established:
+                cost_s = 45.0 if cleared_pass else 60.0
+                print(f" [1] Found Mountain Mining Outpost ({cost_s:.1f} silver + 15 cedar timber)")
+                print(" [2] Geological Survey & Production Estimates")
+                print(" [0] Return")
+                print("-" * 78)
+                o_act = input(" Select action [0-2]: ").strip()
+
+                if o_act == "0":
+                    break
+                elif o_act == "1":
+                    use_city = False
+                    if is_gov:
+                        f_pick = input(" Fund from [1] Municipal City Coffers or [2] Personal Estate Purse? [default=1]: ").strip()
+                        use_city = (f_pick != "2")
+                    reg_id = None
+                    if self.war_engine.standing_army:
+                        print("\n Select a Standing Army Regiment to deploy immediately as Frontier Garrison:")
+                        for idx, r in enumerate(self.war_engine.standing_army, 1):
+                            print(f" [{idx}] {r.id}: {r.definition.name} ({r.soldiers_count} men) at {r.stationed_gate or 'Reserve'}")
+                        print(f" [{len(self.war_engine.standing_army)+1}] None (Deploy later)")
+                        r_pick = input(f" Choose regiment [1-{len(self.war_engine.standing_army)+1}]: ").strip()
+                        try:
+                            r_num = int(r_pick)
+                            if 1 <= r_num <= len(self.war_engine.standing_army):
+                                reg_id = self.war_engine.standing_army[r_num - 1].id
+                        except ValueError:
+                            pass
+                    ok_est, msg_est = self.war_engine.establish_mining_outpost(self.player, regiment_id=reg_id, from_city_funds=use_city)
+                    print("\n" + msg_est)
+                elif o_act == "2":
+                    self._display_mining_geological_survey()
+
+            else:
+                print(" [1] Geological Survey & Tier Yield Estimates")
+                if outpost.tier < 3:
+                    next_tier_cost = "75 silv + 20 timber + 6 bronze tools" if outpost.tier == 1 else "150 silv + 35 timber + 15 bronze tools"
+                    print(f" [2] Upgrade Outpost to Tier {outpost.tier + 1} ({next_tier_cost})")
+                else:
+                    print(" [2] Outpost at Maximum Tier (Tier 3: Deep Vein Complex)")
+                print(" [3] Station / Reassign Frontier Garrison Regiment")
+                print(" [4] Withdraw Garrison Regiment to Mobile Reserve")
+                print(" [0] Return")
+                print("-" * 78)
+                o_act = input(" Select action [0-4]: ").strip()
+
+                if o_act == "0":
+                    break
+                elif o_act == "1":
+                    self._display_mining_geological_survey()
+                elif o_act == "2":
+                    if outpost.tier >= 3:
+                        print(" [!] Outpost is already fully expanded to Tier 3.")
+                        continue
+                    use_city = False
+                    if is_gov:
+                        f_pick = input(" Fund upgrade from [1] Municipal City Coffers or [2] Personal Estate Purse? [default=1]: ").strip()
+                        use_city = (f_pick != "2")
+                    ok_up, msg_up = self.war_engine.upgrade_mining_outpost(self.player, from_city_funds=use_city)
+                    print("\n" + msg_up)
+                elif o_act == "3":
+                    if not self.war_engine.standing_army:
+                        print(" [!] You have no active standing army regiments to station as garrison.")
+                        continue
+                    print("\n Station a Regiment as Frontier Garrison at Zagros Mining Outpost:")
+                    for idx, r in enumerate(self.war_engine.standing_army, 1):
+                        current_tag = " [CURRENT GARRISON]" if r.id == outpost.garrisoned_regiment_id else f" at {r.stationed_gate or 'Reserve'}"
+                        print(f" [{idx}] {r.id}: {r.definition.name} ({r.soldiers_count} men){current_tag}")
+                    print(f" [0] Cancel")
+                    r_pick = input(f" Choose regiment [1-{len(self.war_engine.standing_army)}, 0 to cancel]: ").strip()
+                    try:
+                        r_num = int(r_pick)
+                        if 1 <= r_num <= len(self.war_engine.standing_army):
+                            chosen_r = self.war_engine.standing_army[r_num - 1]
+                            ok_g, msg_g = self.war_engine.assign_outpost_garrison(chosen_r.id)
+                            print("\n" + msg_g)
+                    except ValueError:
+                        pass
+                elif o_act == "4":
+                    ok_w, msg_w = self.war_engine.assign_outpost_garrison(None)
+                    print("\n" + msg_w)
+
+    def _display_mining_geological_survey(self):
+        """Displays historical geological survey and mineral output rates across Zagros tiers."""
+        print("\n" + "=" * 78)
+        print("          GEOLOGICAL & METALLURGICAL SURVEY: ZAGROS FOOTHILLS")
+        print("=" * 78)
+        print(" Because the Tigris-Euphrates basin has zero native ore veins, Mesopotamian")
+        print(" civilization depends entirely on mountain mining expeditions and armed trains.")
+        print("-" * 78)
+        print(" TIER 1: SURFACE TRENCH PITS & OPEN QUARRY")
+        print("  * Workforce: 6 pit miners | Upkeep: 6.0 silver + 120 qa grain / season")
+        print("  * Seasonal Output: 22 - 36 Raw Copper Ore (erû) | 2.2 - 4.0 Tin (annaku)")
+        print("                     16 - 26 Mountain Diorite Stone (abnu)")
+        print("  * Founding Cost:  60 silver (45 if Zagros pass pacified) + 15 cedar timber")
+        print("-" * 78)
+        print(" TIER 2: TIMBERED ADIT SHAFTS & SMELTING HEARTH")
+        print("  * Workforce: 12 miners | Upkeep: 12.0 silver + 240 qa grain / season")
+        print("  * Seasonal Output: 48 - 78 Copper Ore | 5.5 - 9.5 Tin | 36 - 58 Stone")
+        print("  * Upgrade Cost:   75 silver + 20 timber + 6 bronze tools")
+        print("-" * 78)
+        print(" TIER 3: DEEP MOUNTAIN VEIN COMPLEX & MONUMENTAL QUARRY")
+        print("  * Workforce: 20 miners | Upkeep: 20.0 silver + 400 qa grain / season")
+        print("  * Seasonal Output: 85 - 135 Copper Ore | 11.0 - 19.0 Tin | 65 - 110 Stone")
+        print("                     + 35% chance of 15.0 - 30.0 raw silver bullion!")
+        print("  * Upgrade Cost:   150 silver + 35 timber + 15 bronze tools")
+        print("-" * 78)
+        print(" FRONTIER SECURITY & GARRISON DOCTRINE:")
+        print("  * Stationing an armed regiment guarantees 100% shipment arrival and earns")
+        print("    combat experience for troops when repelling Gutian mountain raiders.")
+        print("  * Unguarded outposts suffer a 60% chance of ambush each season, losing 65% of haul!")
+        print("=" * 78)
+        input(" Press Enter to continue...")
+
 
     # --------------------------------------------------------------------------
     # Subsystem 6: The Gate of Shamash (Hall of Justice & Hammurabi's Code)
@@ -2355,6 +2524,16 @@ class BabylonianGame:
             self.news_ticker.append("The King in Babylon proclaimed tax remissions for tenant farmers who dredged their dikes.")
         else:
             self.news_ticker.append(f"Esagila Temple priests performed the sacred sacrifices. CPI is holding at {econ_report['cpi']:.3f}x.")
+
+        # 4b. Settle Zagros Mountain Mining Outpost Haul & Baggage Train
+        if self.war_engine.mining_outpost.is_established and self.player:
+            ok_mine, mine_chronicle, mine_haul = self.war_engine.settle_seasonal_mining(self.player, new_season_name)
+            if ok_mine and mine_chronicle:
+                print(mine_chronicle)
+                self.news_ticker.append(
+                    f"Armed mining train arrived from Zagros: +{mine_haul.get('copper_ore', 0):.0f} copper, "
+                    f"+{mine_haul.get('tin', 0):.1f} tin, +{mine_haul.get('stone', 0):.0f} diorite stone."
+                )
 
         print(f" [+] Season complete! Dawn breaks on {new_season_name.upper()} (Year {self.year}, Day 01).")
 
@@ -2667,6 +2846,8 @@ class BabylonianGame:
                 "city_granary_barley": self.war_engine.city_granary_barley,
                 "gate_toll_revenue_daily": self.war_engine.gate_toll_revenue_daily,
                 "tax_policy": self.war_engine.tax_policy,
+                "campaigns_completed": self.war_engine.campaigns_completed,
+                "mining_outpost": self.war_engine.mining_outpost.to_dict(),
                 "regiments": [
                     {
                         "id": r.id,
@@ -2816,6 +2997,14 @@ class BabylonianGame:
                 tax_pol = a_data.get("tax_policy", "STATUTORY")
                 self.war_engine.set_tax_policy(tax_pol)
                 self.war_engine.gate_toll_revenue_daily = a_data.get("gate_toll_revenue_daily", self.war_engine.gate_toll_revenue_daily)
+                if "campaigns_completed" in a_data:
+                    self.war_engine.campaigns_completed = {int(k): v for k, v in a_data["campaigns_completed"].items()}
+                else:
+                    self.war_engine.campaigns_completed = {}
+                if "mining_outpost" in a_data:
+                    self.war_engine.mining_outpost = MiningOutpost.from_dict(a_data["mining_outpost"])
+                else:
+                    self.war_engine.mining_outpost = MiningOutpost()
                 self.war_engine.standing_army = []
                 for r_item in a_data.get("regiments", []):
                     u_type = UnitType[r_item["unit_type"]]
@@ -3042,9 +3231,22 @@ def run_automated_smoke_test():
     assert sec_rating > 0, "Security rating should be positive"
     print(f" [+] Warfare engine verified: Recruited, armed, drilled (Security Rating: {sec_rating:.1f}%).")
 
-    # 8. Season Advance, Save & Load with Stocks & Tax Policy
-    print("\n[8/8] Testing Season Advance & Save/Load with Stocks, Taxes & Harvest State...")
+    # 8. Season Advance, Save & Load with Stocks, Tax Policy & Mining Outpost
+    print("\n[8/8] Testing Season Advance & Save/Load with Stocks, Taxes & Mining Outpost...")
+    
+    # Establish and garrison mining outpost in smoke test
+    game.player.wallet.add_silver(200.0)
+    game.player.inventory["timber"] = 30.0
+    ok_est, msg_est = game.war_engine.establish_mining_outpost(game.player, regiment_id=new_reg.id)
+    assert ok_est, f"Outpost establishment failed: {msg_est}"
+    assert game.war_engine.mining_outpost.is_established
+    assert game.war_engine.mining_outpost.garrisoned_regiment_id == new_reg.id
+
+    init_copper = game.player.inventory.get("copper_ore", 0.0)
     game.advance_season()
+    assert game.player.inventory.get("copper_ore", 0.0) > init_copper, "Mining baggage train should deliver copper"
+    assert game.war_engine.mining_outpost.total_copper_delivered > 0
+
     game.SAVE_FILE_PATH = "test_savegame.json"
     game.workshop_tier = 2
     game.hired_artisans = 1
@@ -3056,6 +3258,8 @@ def run_automated_smoke_test():
     assert game.wage_policy == "EFFICIENCY", "Wage policy failed to restore"
     assert len(game.war_engine.standing_army) == initial_army_len + 1, "Army regiments failed to restore"
     assert game.war_engine.tax_policy == "HEAVY_PATRICIAN", "Tax policy failed to restore"
+    assert game.war_engine.mining_outpost.is_established, "Mining outpost failed to restore"
+    assert game.war_engine.mining_outpost.garrisoned_regiment_id == new_reg.id, "Outpost garrison failed to restore"
     assert game.market.get_stock("bread") > 0, "Market stock failed to restore"
     if os.path.exists("test_savegame.json"):
         os.remove("test_savegame.json")

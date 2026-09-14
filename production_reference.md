@@ -52,6 +52,15 @@ Prosperous Awīlum patricians and Governors requisition day-laborers with pack b
 | **[6] Fisher Flotilla** | Coracle Channel Netting (*Nūnu*) | 3.0 Silver + 15 qa Barley | **60–140 Dried Fish** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
 | **[7] Bitumen Haulers** | Natural Seep Extraction (*Ittû*) | 4.0 Silver + 20 qa Barley | **30–70 Bitumen Pitch** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
 
+### 1c. Imperial Mountain Mining Outpost (*Halṣum Šadî - Zagros Foothills*)
+Because Mesopotamia has zero native mineral veins or stone bedrock, metals and stone are extracted from fortified mountain outposts and delivered to Babylon each season via armed baggage trains:
+
+| Mining Facility Tier | Development Scale | Workforce & Upkeep / Season | Seasonal Haul Delivered to Babylon | Establishment / Upgrade Cost | Garrison Requirement |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Tier 1: Surface Pits** | Trench pits & open stone quarry | 6 Pit Miners<br>`6.0 Silv + 120 qa Grain` | **22–36 Copper Ore (*Erû*)**<br>**2.2–4.0 Tin (*Annaku*)**<br>**16–26 Mountain Stone (*Abnu*)** | 60.0 Silver (45.0 if Zagros pass cleared)<br>+ 15 Cedar Timber Logs | Optional but recommended (Unguarded: 60% raid chance, 65% haul loss) |
+| **Tier 2: Timbered Adits**| Shored drift shafts & smelting hearth | 12 Deep Miners<br>`12.0 Silv + 240 qa Grain` | **48–78 Copper Ore (*Erû*)**<br>**5.5–9.5 Tin (*Annaku*)**<br>**36–58 Mountain Stone (*Abnu*)** | 75.0 Silver Shekels<br>+ 20 Cedar Timber Logs<br>+ 6 Bronze Tools (*Niggallu*) | Stationed standing army regiment repels Gutian raiders & gains combat XP |
+| **Tier 3: Deep Vein Complex**| Deep mountain mine & monumental quarry | 20 Veteran Miners<br>`20.0 Silv + 400 qa Grain` | **85–135 Copper Ore (*Erû*)**<br>**11.0–19.0 Tin (*Annaku*)**<br>**65–110 Mountain Stone (*Abnu*)**<br>*(+35% chance 15–30 Raw Silver Bullion)* | 150.0 Silver Shekels<br>+ 35 Cedar Timber Logs<br>+ 15 Bronze Tools (*Niggallu*) | Essential (Guarantees 100% haul arrival through the Marduk Gate) |
+
 ---
 
 ## 2. Artisan Workshop Economics & Time Formulas
@@ -300,4 +309,34 @@ The farming subsystem realistically tracks seasonal field states to eliminate in
    - The municipal tithe (*Šibšu*) is automatically remitted to the city silos.
 4. **Summer Reset:**
    - Field stubble is grazed, and the seasonal harvest flag is reset for the next agricultural year.
+
+---
+
+## 11. Imperial Mountain Mining Outpost (*Halṣum Šadî*) Mechanics
+
+### 11.1 Historical Context & The Alluvial Metal Paradox
+The alluvial floodplains of the Tigris and Euphrates contain rich soil, river reeds, clay, and bitumen, but **zero native copper veins, tin deposits, or stone bedrock**.
+In the Old Babylonian period (c. 1750 BC), access to copper (*erû*), cassiterite tin (*annaku*), and monumental diorite stone (*abnu*) required distant mountain expeditions to the Zagros foothills or Persian Gulf voyages.
+The **Imperial Mountain Mining Outpost (*Halṣum Šadî*)** enables Awīlum patricians and Rabiānum Governors to establish a permanent fortified mining settlement in the Zagros mountains, connecting directly to Babylon's metallurgy workshops.
+
+### 11.2 Founding & Campaign 2 Synergies
+- **Standard Founding Cost:** 60.0 silver shekels + 15 cedar timber logs (for pit shoring, stockade, and smelting hearths).
+- **Zagros Brigands Cleared (Campaign 2):** If you lead Babylon's military forces to victory in **Campaign 2 (Purge Zagros Mountain Brigands)**, the mountain pass trade corridor is pacified. Founding silver cost is reduced by **25%** (to 45.0 silver shekels), and seasonal haul volumes receive a permanent **+15% pacification bonus**.
+- **Co-Funding:** Rabiānum Governors can fund the founding and expansions directly from the **Babylon Municipal Civic Treasury (*Bīt Ālī*)**.
+
+### 11.3 Frontier Garrison Doctrine & Gutian Raider Defense
+- **The Mountain Threat:** Highland nomadic tribes (Gutians, Lullubi, and deserting mercenaries) constantly stalk the mountain passes.
+- **Stationing a Garrison:** Any active standing army regiment (Bā'iru archers, Rēdû heavy spearmen, or War Chariots) can be stationed at the outpost.
+  - **100% Haul Protection:** Stationed troops guarantee zero loss of mined cargo.
+  - **Combat Experience:** When Gutian warbands raid the outpost (~30% chance/season), the stationed garrison repels the attackers and gains **+1 Experience Level** (up to Level 5 Veterans).
+- **Unguarded Outpost Danger:** If no garrison is deployed, there is a **60% chance each season** of a mountain ambush, plundering **65% of the ore haul**.
+
+### 11.4 Armed Baggage Train Delivery
+Every seasonal advancement (`advance_season`), the mining baggage train arrives at the **Marduk Gate**:
+1. Seasonal miner wages and grain rations are deducted from the Municipal Granary/Coffers (if Governor) or personal estate purse.
+2. The extracted copper ore, tin, and stone are deposited directly into your inventory sacks.
+3. Raw copper ore and tin can then be smelted in your **Artisan Workshop**:
+   - **Bronze Tools (*niggallu*):** 2 Copper Ore + 0.2 Tin $\rightarrow$ 3 Bronze Tools (Massive demand in winter).
+   - **Bronze Weapons (*kakku*):** 3 Copper Ore + 0.3 Tin $\rightarrow$ 2 Bronze Weapons (Used to equip Rēdû heavy infantry).
+   - **War Chariots (*narkabtu*):** 4 Timber + 1 Bronze Tools $\rightarrow$ 1 Spoked War Chariot.
 

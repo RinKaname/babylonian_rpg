@@ -160,6 +160,9 @@ class GoodsRegistry:
         self.register(Good("tin", "Cassiterite / Tin", "annaku", GoodCategory.RAW_MINERAL, 
                            base_price=12.00, weight_kg=10.0,
                            description="Extremely rare imported metal from Anatolia/East; alloyed at 1:9 with copper for bronze."))
+        self.register(Good("stone", "Mountain Stone / Diorite", "abnu", GoodCategory.RAW_MINERAL, 
+                           base_price=1.50, weight_kg=50.0,
+                           description="Diorite, basalt, and limestone quarried from the Zagros foothills; vital for royal stelae, grain mills, and palace foundations."))
         self.register(Good("bronze_tools", "Bronze Plows & Sickles", "niggallu", GoodCategory.MANUFACTURES, 
                            base_price=5.00, weight_kg=4.0,
                            description="Heavy-duty agricultural and artisan tools that drastically increase productivity."))
