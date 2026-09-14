@@ -135,6 +135,8 @@ class BabylonianGame:
         # Agricultural Season State-Tracking & Incremental Sowing
         self.has_harvested_spring: bool = False
         self.sowed_acres: float = 0.0
+        self.sowed_barley_acres: float = 0.0
+        self.sowed_emmer_acres: float = 0.0
 
         # 3. Notable World Citizens (NPCs)
         self.npcs: Dict[str, Character] = self._setup_world_npcs()
@@ -449,6 +451,7 @@ class BabylonianGame:
             # Display curated list of benchmark and essential goods
             catalog = [
                 ("barley", "Basic Food"),
+                ("emmer", "Basic Food"),
                 ("bread", "Basic Food"),
                 ("dates", "Fruit"),
                 ("sesame_oil", "Oils & Fuel"),
@@ -573,7 +576,8 @@ class BabylonianGame:
             print("\n" + "=" * 70)
             print(f"      AGRICULTURE, REAL ESTATE & WORKSHOP GUILDS ({season_name.upper()})")
             print("=" * 70)
-            print(f" Land Owned:    {self.player.owned_land_acres:.1f} acres arable soil (Sown: {self.sowed_acres:.1f} acres)")
+            crop_detail = f"({self.sowed_barley_acres:.1f} Barley | {self.sowed_emmer_acres:.1f} Emmer)" if self.sowed_acres > 0 else ""
+            print(f" Land Owned:    {self.player.owned_land_acres:.1f} acres arable soil (Sown: {self.sowed_acres:.1f} acres {crop_detail})")
             print(f" Livestock:     {self.player.owned_oxen} draft oxen (+{self.player.owned_oxen*25}% harvest bonus) | {self.player.owned_sheep} sheep")
             print(f" Stored Barley: {self.player.wallet.barley_gur:.2f} gur ({self.player.wallet.barley_qa:.0f} qa)")
             print(f" Stored Silver: {self.player.wallet.silver_shekels:.2f} silver shekels")
@@ -607,34 +611,76 @@ class BabylonianGame:
                         print(f" [+] All {self.player.owned_land_acres:.1f} acres of your estate are already plowed and sown for this agricultural year!")
                         continue
 
-                    seed_needed_qa = unsowed_acres * 10.0  # 10 qa per acre
-                    if self.player.wallet.barley_qa < seed_needed_qa:
-                        max_can_sow = int(self.player.wallet.barley_qa // 10.0)
-                        if max_can_sow < 1:
-                            print(f" [!] Insufficient seed barley! Need at least 10 qa to sow 1 acre (You have {self.player.wallet.barley_qa:.0f} qa).")
-                            continue
-                        print(f" [!] You hold {self.player.wallet.barley_qa:.0f} qa seed barley, sufficient to sow {max_can_sow} of your {unsowed_acres:.1f} unsown acres.")
-                        p_conf = input(f" Sow {max_can_sow} acres using {max_can_sow * 10} qa seed barley? (Y/n): ").strip().lower()
-                        if p_conf == "n":
-                            continue
-                        acres_to_sow = float(max_can_sow)
-                        seed_spent = acres_to_sow * 10.0
-                    else:
-                        acres_to_sow = unsowed_acres
-                        seed_spent = seed_needed_qa
+                    print(f" You have {unsowed_acres:.1f} unsown acres on your estate.")
+                    print(" Select cereal grain to sow (10 qa seed / acre):")
+                    print(f" [1] Barley Grain (še'u)    - Available seed: {self.player.wallet.barley_qa:.0f} qa (Primary volumetric currency)")
+                    avail_emmer = self.player.inventory.get("emmer", 0.0)
+                    print(f" [2] Emmer Wheat (zizzu)    - Available seed: {avail_emmer:.0f} qa (Aristocratic grain for Spelt Beer & Pastries)")
+                    print(" [0] Cancel")
+                    crop_choice = input(" Choose crop to sow [1-2, default=1]: ").strip() or "1"
 
-                    self.player.wallet.spend_barley(seed_spent)
-                    self.player.inventory["barley"] = self.player.wallet.barley_qa
-                    if self.player.inventory["barley"] <= 0:
-                        del self.player.inventory["barley"]
-                    self.sowed_acres += acres_to_sow
+                    if crop_choice == "0":
+                        continue
+                    elif crop_choice == "2":
+                        # Sowing Emmer Wheat
+                        if avail_emmer < 10.0:
+                            print(f" [!] Insufficient seed emmer! Need at least 10 qa to sow 1 acre (You have: {avail_emmer:.1f} qa in sacks).")
+                            print("     (Buy emmer at Kārum Market, or gather via Foraging [9] or Corvée [9]).")
+                            continue
+                        max_can_sow = int(min(unsowed_acres, avail_emmer // 10.0))
+                        acres_str = input(f" How many acres to sow with Emmer Wheat [1-{max_can_sow}, default={max_can_sow}]? ").strip()
+                        try:
+                            acres_to_sow = float(acres_str) if acres_str else float(max_can_sow)
+                            acres_to_sow = min(float(max_can_sow), max(1.0, acres_to_sow))
+                        except ValueError:
+                            acres_to_sow = float(max_can_sow)
+                        seed_spent = acres_to_sow * 10.0
+                        self.player.inventory["emmer"] -= seed_spent
+                        if self.player.inventory["emmer"] <= 1e-4:
+                            del self.player.inventory["emmer"]
+                        self.sowed_emmer_acres += acres_to_sow
+                        self.sowed_acres += acres_to_sow
+                        crop_name = "Emmer Wheat (zizzu)"
+                    else:
+                        # Sowing Barley Grain
+                        seed_needed_qa = unsowed_acres * 10.0
+                        if self.player.wallet.barley_qa < seed_needed_qa:
+                            max_can_sow = int(self.player.wallet.barley_qa // 10.0)
+                            if max_can_sow < 1:
+                                print(f" [!] Insufficient seed barley! Need at least 10 qa to sow 1 acre (You have {self.player.wallet.barley_qa:.0f} qa).")
+                                continue
+                            print(f" [!] You hold {self.player.wallet.barley_qa:.0f} qa seed barley, sufficient to sow {max_can_sow} of your {unsowed_acres:.1f} unsown acres.")
+                            acres_str = input(f" Sow how many acres with barley [1-{max_can_sow}, default={max_can_sow}]? ").strip()
+                            try:
+                                acres_to_sow = float(acres_str) if acres_str else float(max_can_sow)
+                                acres_to_sow = min(float(max_can_sow), max(1.0, acres_to_sow))
+                            except ValueError:
+                                acres_to_sow = float(max_can_sow)
+                            seed_spent = acres_to_sow * 10.0
+                        else:
+                            acres_str = input(f" Sow how many acres with barley [1-{unsowed_acres:.0f}, default={unsowed_acres:.0f}]? ").strip()
+                            try:
+                                acres_to_sow = float(acres_str) if acres_str else unsowed_acres
+                                acres_to_sow = min(unsowed_acres, max(1.0, acres_to_sow))
+                            except ValueError:
+                                acres_to_sow = unsowed_acres
+                            seed_spent = acres_to_sow * 10.0
+
+                        self.player.wallet.spend_barley(seed_spent)
+                        self.player.inventory["barley"] = self.player.wallet.barley_qa
+                        if self.player.inventory["barley"] <= 0:
+                            del self.player.inventory["barley"]
+                        self.sowed_barley_acres += acres_to_sow
+                        self.sowed_acres += acres_to_sow
+                        crop_name = "Barley Grain (še'u)"
+
                     self.has_harvested_spring = False
                     self.player.energy = max(0.0, self.player.energy - 30.0)
                     self.player.hunger = min(100.0, self.player.hunger + 20.0)
                     self.player.skills.agriculture += 1
                     self.advance_hours(6.0)
-                    print(f" [+] Plowing & Sowing complete (6.0 hours)! Sowed {seed_spent:.0f} qa seed across {acres_to_sow:.1f} newly tilled acres.")
-                    print(f"     Estate Status: {self.sowed_acres:.1f} / {self.player.owned_land_acres:.1f} acres sown for the upcoming spring harvest.")
+                    print(f" [+] Plowing & Sowing complete (6.0 hours)! Sowed {seed_spent:.0f} qa seed across {acres_to_sow:.1f} acres of {crop_name}.")
+                    print(f"     Estate Status: {self.sowed_acres:.1f} / {self.player.owned_land_acres:.1f} acres sown ({self.sowed_barley_acres:.1f} Barley | {self.sowed_emmer_acres:.1f} Emmer).")
 
                 elif self.season_idx == 1:  # Winter - Canal Care
                     self.player.energy = max(0.0, self.player.energy - 25.0)
@@ -652,37 +698,61 @@ class BabylonianGame:
                         print(" [!] You have no sown crops to reap! Fields must be plowed and sown with seed in Autumn.")
                         continue
 
-                    # Yield calculation based on sowed_acres
+                    # Fallback for save compatibility if only total sowed_acres was tracked
+                    if self.sowed_barley_acres == 0.0 and self.sowed_emmer_acres == 0.0 and self.sowed_acres > 0.0:
+                        self.sowed_barley_acres = self.sowed_acres
+
                     oxen_mult = 1.0 + (self.player.owned_oxen * 0.25)
                     skill_mult = 1.0 + (self.player.skills.agriculture * 0.10)
-                    yield_per_acre_qa = random.uniform(250.0, 380.0) * oxen_mult * skill_mult
-                    gross_harvest_qa = self.sowed_acres * yield_per_acre_qa
-
-                    # Municipal Harvest Tithe (Šibšu) to City Granary (Bīt Ālī)
                     tithe_rate = self.war_engine.get_tax_rates().get("harvest_tithe_rate", 0.10)
-                    tithe_qa = round(gross_harvest_qa * tithe_rate, 1)
-                    net_harvest_qa = round(gross_harvest_qa - tithe_qa, 1)
+                    harvest_reports = []
 
-                    self.war_engine.city_granary_barley += tithe_qa
-                    self.player.wallet.add_barley(net_harvest_qa)
-                    self.player.inventory["barley"] = self.player.wallet.barley_qa
-                    self.player.energy = max(0.0, self.player.energy - 45.0)
-                    self.player.hunger = min(100.0, self.player.hunger + 25.0)
+                    # 1. Barley Harvest
+                    if self.sowed_barley_acres > 0.0:
+                        yield_b = random.uniform(250.0, 380.0) * oxen_mult * skill_mult
+                        gross_b = self.sowed_barley_acres * yield_b
+                        tithe_b = round(gross_b * tithe_rate, 1)
+                        net_b = round(gross_b - tithe_b, 1)
+                        self.war_engine.city_granary_barley += tithe_b
+                        self.player.wallet.add_barley(net_b)
+                        self.player.inventory["barley"] = self.player.wallet.barley_qa
+                        harvest_reports.append(
+                            f"     * Barley Grain ({self.sowed_barley_acres:.1f} acres): Gross {gross_b/300:.2f} gur ({gross_b:.0f} qa) | Tithe {tithe_b:.0f} qa -> Net +{net_b:.0f} qa in Granary"
+                        )
 
-                    # Wool shear from sheep
+                    # 2. Emmer Wheat Harvest
+                    if self.sowed_emmer_acres > 0.0:
+                        yield_e = random.uniform(230.0, 350.0) * oxen_mult * skill_mult
+                        gross_e = self.sowed_emmer_acres * yield_e
+                        tithe_e = round(gross_e * tithe_rate, 1)
+                        net_e = round(gross_e - tithe_e, 1)
+                        self.war_engine.city_granary_barley += tithe_e
+                        self.player.inventory["emmer"] = self.player.inventory.get("emmer", 0.0) + net_e
+                        harvest_reports.append(
+                            f"     * Emmer Wheat ({self.sowed_emmer_acres:.1f} acres): Gross {gross_e/300:.2f} gur ({gross_e:.0f} qa) | Tithe {tithe_e:.0f} qa -> Net +{net_e:.0f} qa in Sacks"
+                        )
+
+                    # 3. Wool shear from sheep
                     wool_harvest = self.player.owned_sheep * 2.5
                     if wool_harvest > 0:
                         self.player.inventory["raw_wool"] = self.player.inventory.get("raw_wool", 0.0) + wool_harvest
-                        print(f" [+] Sheared {wool_harvest:.1f} talents of raw wool from your sheep!")
+                        harvest_reports.append(f"     * Sheep Wool: Sheared +{wool_harvest:.1f} talents of raw wool from {self.player.owned_sheep} sheep!")
 
+                    self.player.energy = max(0.0, self.player.energy - 45.0)
+                    self.player.hunger = min(100.0, self.player.hunger + 25.0)
                     self.advance_hours(8.0)
-                    print(f" [+] Bountiful Spring Harvest (8.0 hours) across {self.sowed_acres:.1f} sown acres!")
-                    print(f"     Gross Yield:      {gross_harvest_qa/300:.2f} gur ({gross_harvest_qa:.0f} qa) of prime barley.")
-                    print(f"     Municipal Tithe:  {tithe_qa/300:.2f} gur ({tithe_qa:.0f} qa) ({tithe_rate*100:.0f}% Šibšu) delivered to Bīt Ālī Public Silos.")
-                    print(f"     Net Stored Grain: {net_harvest_qa/300:.2f} gur ({net_harvest_qa:.0f} qa) stored in your personal granary.")
+
+                    print(f"\n" + "=" * 76)
+                    print(f" [+] THE GREAT SPRING HARVEST (8.0 hours) across {self.sowed_acres:.1f} sown acres!")
+                    print("=" * 76)
+                    for r in harvest_reports:
+                        print(r)
+                    print("=" * 76)
 
                     self.has_harvested_spring = True
                     self.sowed_acres = 0.0
+                    self.sowed_barley_acres = 0.0
+                    self.sowed_emmer_acres = 0.0
 
                 elif self.season_idx == 3:  # Summer - Flood & Date Orchards
                     self.has_harvested_spring = False
@@ -732,7 +802,11 @@ class BabylonianGame:
                     if 0 < acres <= self.player.owned_land_acres:
                         payout = acres * 15.0
                         self.player.owned_land_acres -= acres
-                        self.sowed_acres = min(self.sowed_acres, self.player.owned_land_acres)
+                        if self.sowed_acres > self.player.owned_land_acres:
+                            scale = self.player.owned_land_acres / self.sowed_acres if self.sowed_acres > 0 else 1.0
+                            self.sowed_barley_acres *= scale
+                            self.sowed_emmer_acres *= scale
+                            self.sowed_acres = self.player.owned_land_acres
                         self.player.wallet.add_silver(payout)
                         print(f" [+] Sold {acres:.1f} acres to local estate. Received {payout:.2f} silver shekels.")
                     else:
@@ -805,11 +879,13 @@ class BabylonianGame:
             print(" [5] Forage Wild Watercress & Mustard Herbs  - 3.0 hrs, 15% nrg -> 3-8 Cress, 2-5 Mustard (CPI Food)")
             print(" [6] Net River Carp in Euphrates (Nūnu)      - 4.0 hrs, 20% nrg -> 8-20 Dried Fish (Protein)")
             print(" [7] Haul Raw Bitumen Pitch from Seeps (Ittû)- 4.0 hrs, 25% nrg -> 4-10 Bitumen (Waterproofing)")
+            print(" [8] Harvest Ripe Date Palms (Suluppu)      - 3.5 hrs, 20% nrg -> 8-20 Sweet Dates (Food/Sweetener)")
+            print(" [9] Gather Wild River Emmer Wheat (Zizzu)  - 3.5 hrs, 20% nrg -> 15-35 qa Emmer Wheat (Brewing/Pastries)")
             print(" [C] Mobilize Corvée Labor Gang (Tupšikku)   - Requisition laborers for BULK harvests (0% energy)")
             print(" [0] Return to Agriculture & Workshop Menu")
             print("-" * 72)
 
-            f_act = input(" Choose foraging expedition [0-7, C]: ").strip()
+            f_act = input(" Choose foraging expedition [0-9, C]: ").strip()
             if f_act == "0":
                 break
             if f_act.upper() == "C":
@@ -901,6 +977,34 @@ class BabylonianGame:
                 self.advance_hours(hrs)
                 print(f" [+] Bitumen Pits (4.0 hours)! Ladled {qty:.1f} jars of natural petroleum pitch (Ittû)!")
 
+            elif f_act == "8":
+                # Date Palms
+                hrs, nrg, hng = 3.5, 20.0, 15.0
+                if self.player.energy < nrg:
+                    print(" [!] Not enough energy to climb palm trees.")
+                    continue
+                qty = round(random.uniform(8.0, 20.0) + (self.player.skills.agriculture * 0.8), 1)
+                self.player.inventory["dates"] = self.player.inventory.get("dates", 0.0) + qty
+                self.player.energy = max(0.0, self.player.energy - nrg)
+                self.player.hunger = min(100.0, self.player.hunger + hng)
+                self.player.skills.agriculture += 1
+                self.advance_hours(hrs)
+                print(f" [+] Date Palm Groves (3.5 hours)! Scaled riverbank palms and harvested {qty:.1f} baskets of ripe sweet dates (Suluppu)!")
+
+            elif f_act == "9":
+                # Wild Emmer Wheat
+                hrs, nrg, hng = 3.5, 20.0, 15.0
+                if self.player.energy < nrg:
+                    print(" [!] Not enough energy to trek the river terraces.")
+                    continue
+                qty = round(random.uniform(15.0, 35.0) + (self.player.skills.agriculture * 1.5), 1)
+                self.player.inventory["emmer"] = self.player.inventory.get("emmer", 0.0) + qty
+                self.player.energy = max(0.0, self.player.energy - nrg)
+                self.player.hunger = min(100.0, self.player.hunger + hng)
+                self.player.skills.agriculture += 1
+                self.advance_hours(hrs)
+                print(f" [+] River Terraces (3.5 hours)! Gathered and threshed {qty:.1f} qa of wild emmer wheat (Zizzu)!")
+
     def handle_corvee_forage(self):
         """Requisition or hire day-labor gangs (Tupšikku / Agrū under Code §§ 273-274) to harvest alluvial resources in industrial bulk."""
         while True:
@@ -927,10 +1031,12 @@ class BabylonianGame:
             print(" [5] Wetland Herb Pickers (Sahlû)    - 2.5 silv + 15 qa grain -> 30-60 Cress, 20-40 Mustard")
             print(" [6] River Fisherman Flotilla (Nūnu) - 3.0 silv + 15 qa grain -> 60-140 Dried Fish")
             print(" [7] Bitumen Seep Haulers (Ittû)     - 4.0 silv + 20 qa grain -> 30-70 Bitumen Pitch")
+            print(" [8] Date Palm Orchard Harvesters    - 3.0 silv + 15 qa grain -> 40-90 Baskets Sweet Dates")
+            print(" [9] Emmer Wheat Reapers (Zizzu)     - 3.5 silv + 15 qa grain -> 60-140 qa Emmer Wheat")
             print(" [0] Return to Commons Foraging Menu")
             print("-" * 74)
 
-            c_act = input(" Choose corvée labor dispatch [0-7]: ").strip()
+            c_act = input(" Choose corvée labor dispatch [0-9]: ").strip()
             if c_act == "0":
                 break
 
@@ -1003,6 +1109,26 @@ class BabylonianGame:
                     "base_min": 30.0,
                     "base_max": 70.0,
                     "desc": "Haulers dug asphalt from natural oil seeps and hauled sealed clay jars back to your storehouse."
+                },
+                "8": {
+                    "name": "Date Palm Orchard Harvesters",
+                    "item_key": "dates",
+                    "item_name": "baskets of sweet chewy dates (Suluppu)",
+                    "silver_cost": 3.0,
+                    "grain_cost": 15.0,
+                    "base_min": 40.0,
+                    "base_max": 90.0,
+                    "desc": "Agile palm climbers scaled the date palm trunks along the canal banks and harvested heavy fruit clusters."
+                },
+                "9": {
+                    "name": "Emmer Wheat Reapers (Zizzu Gang)",
+                    "item_key": "emmer",
+                    "item_name": "qa of golden emmer wheat (Zizzu)",
+                    "silver_cost": 3.5,
+                    "grain_cost": 15.0,
+                    "base_min": 60.0,
+                    "base_max": 140.0,
+                    "desc": "Reapers with flint-bladed sickles reaped outlying emmer wheat terraces and threshed the hulled grain."
                 }
             }
 
@@ -2510,6 +2636,8 @@ class BabylonianGame:
                 self.player.age += 1
             self.has_harvested_spring = False
             self.sowed_acres = 0.0
+            self.sowed_barley_acres = 0.0
+            self.sowed_emmer_acres = 0.0
         elif self.season_idx == 3:  # Entering Summer (Spring harvest concluded)
             self.has_harvested_spring = False
 
@@ -2840,6 +2968,8 @@ class BabylonianGame:
             ],
             "has_harvested_spring": self.has_harvested_spring,
             "sowed_acres": self.sowed_acres,
+            "sowed_barley_acres": self.sowed_barley_acres,
+            "sowed_emmer_acres": self.sowed_emmer_acres,
             "army": {
                 "regiment_counter": self.war_engine.regiment_counter,
                 "city_treasury_silver": self.war_engine.city_treasury_silver,
@@ -2942,6 +3072,8 @@ class BabylonianGame:
                 "sowed_acres",
                 self.player.owned_land_acres if self.season_idx in (0, 1, 2) and not self.has_harvested_spring else 0.0
             )
+            self.sowed_barley_acres = data.get("sowed_barley_acres", self.sowed_acres)
+            self.sowed_emmer_acres = data.get("sowed_emmer_acres", 0.0)
 
             # Restore marriage contract
             m_data = data.get("marriage")

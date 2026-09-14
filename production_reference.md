@@ -25,11 +25,11 @@
 | **[14] Potter's Kiln**| Clay Vessels (*karpatu*) | 2 Reeds or Dung Fuel | 4 Clay Vessels | 2.5h | 8–12% | Food Storage & Rations |
 | **[15] Seal Engraver**| Carved Cylinder Seal (*kunukku*)| 1 Bronze Tools + 2 Silv | 1 Cylinder Seal | 5.0h | 8–12% | Legal Seals & High Resale |
 | **[16] Royal Lapidary**| Gold-Mounted Filigree | 20.0 Silver Shekels | +4 Seal Prestige | 4.0h | 15% | Unlocks City Governor Office |
-| **Autumn Farm** | Sowing & Plowing | 10.0 qa Barley / Acre | Fields Sowed (Incremental)| 6.0h | 30% | Agriculture Skill (+1) |
+| **Autumn Farm** | Sowing & Plowing | 10.0 qa Barley or Emmer / Acre | Fields Sowed (Incremental choice: Barley / Emmer) | 6.0h | 30% | Agriculture Skill (+1) |
 | **Winter Farm** | Canal Silt Dredging | *None* | Canals Cleared | 6.0h | 25% | Agriculture Skill (+1) |
-| **Spring Farm** | The Great Harvest | *None* (Reaps sowed land) | 250–380 qa/Acre (-Šibšu Tithe)| 8.0h | 45% | Massive Barley Yield (Once/Year) |
+| **Spring Farm** | The Great Harvest | *None* (Reaps sowed land) | Barley: 250–380 qa/Acre<br>Emmer: 230–350 qa/Acre<br>*(Less municipal Šibšu tithe)* | 8.0h | 45% | Massive Grain Yield (Once/Year) |
 | **Spring Sheep** | Wool Shearing | *None* (Automatic) | 2.5 Talents Wool / Sheep | Instant | 0% | Raw Wool Inventory |
-| **Summer Farm** | Date Palm Foraging | *None* | 5–15 Baskets Dates | 4.0h | 20% | Food & Sugar Supply |
+| **Summer Farm** | Date Palm Harvesting | *None* | 5–15 Baskets Dates | 4.0h | 20% | Food & Sugar Supply |
 | **Corvée Labor** | Royal Canal Digging | *None* | 5 grains silver $\times$ CPI | 8.0h | 30% | Statutory Wage Earnings |
 | **Forage Timber**| Riverbank Woodcutting (*Iṣu*)| *None* | 2–5 Poplar/Tamarisk Logs | 4.5h | 30% | Domestic Wood for Bows & Chariots|
 | **Forage Reeds** | Marsh Reed Cutting (*Qanû*) | *None* | 15–35 Reed Bundles | 3.0h | 15% | Brewing, Kiln Fuel, Mudbrick |
@@ -38,6 +38,8 @@
 | **Forage Herbs** | Wild Cress & Mustard (*Sahlû*)| *None* | 3–8 Cress, 2–5 Mustard | 3.0h | 15% | High-Value CPI Cash Food & Medicine|
 | **Forage Fish**  | Euphrates River Netting (*Nūnu*)| *None* | 8–20 Dried Carp & Fish | 4.0h | 20% | Staple Protein & Ration Supply |
 | **Forage Bitumen**| Hit Bitumen Seep Hauling (*Ittû*)| *None* | 4–10 Bitumen Pitch | 4.0h | 25% | Caulking, Waterproofing, Mortar |
+| **Forage Dates** | Palm Tree Groves (*Suluppu*)  | *None* | 8–20 Baskets Sweet Dates | 3.5h | 20% | Food, Delicacy & Pastry Sugar |
+| **Forage Emmer** | Wild River Terraces (*Zizzu*) | *None* | 15–35 qa Emmer Wheat | 3.5h | 20% | Golden Spelt Beer & Pastries |
 
 ### 1b. Patrician & Governor Corvée Labor Gangs (*Tupšikku / Agrū* under Code §§ 273–274)
 Prosperous Awīlum patricians and Governors requisition day-laborers with pack beasts and ox-carts to harvest alluvial commons in industrial bulk:
@@ -51,6 +53,8 @@ Prosperous Awīlum patricians and Governors requisition day-laborers with pack b
 | **[5] Wetland Herb Crew** | Foraging Wild Cress & Mustard | 2.5 Silver + 15 qa Barley | **30–60 Cress, 20–40 Mustard**| 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
 | **[6] Fisher Flotilla** | Coracle Channel Netting (*Nūnu*) | 3.0 Silver + 15 qa Barley | **60–140 Dried Fish** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
 | **[7] Bitumen Haulers** | Natural Seep Extraction (*Ittû*) | 4.0 Silver + 20 qa Barley | **30–70 Bitumen Pitch** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[8] Date Palm Harvesters** | Palm Orchard Reaping (*Suluppu*) | 3.0 Silver + 15 qa Barley | **40–90 Baskets Sweet Dates** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
+| **[9] Emmer Wheat Reapers** | Field Reaping Gang (*Zizzu*) | 3.5 Silver + 15 qa Barley | **60–140 qa Emmer Wheat** | 1.0h | **0%** | +10%/ox, +25% Awīlum/Rabiānum |
 
 ### 1c. Imperial Mountain Mining Outpost (*Halṣum Šadî - Zagros Foothills*)
 Because Mesopotamia has zero native mineral veins or stone bedrock, metals and stone are extracted from fortified mountain outposts and delivered to Babylon each season via armed baggage trains:
@@ -254,6 +258,8 @@ Foraging in the uncultivated areas around Babylon allows any citizen or destitut
 | **Wetland Herb Foraging (*Sahlû & Kasû*)** | Irrigation Ditch Embankments | 3.0h / 15% | 3–8 `cress` + 2–5 `mustard` | High-value CPI benchmark cash food. Sells at premium rates on the Kārum. |
 | **Euphrates River Netting (*Nūnu*)** | River Channels & Spillways | 4.0h / 20% | 8–20 `dried_fish` | Inexpensive protein for household sustenance or tavern resale. |
 | **Hit Petroleum Seep Hauling (*Ittû*)** | Surface Bitumen Pitch Springs | 4.0h / 25% | 4–10 `bitumen` pitch | Essential waterproofing mortar for canal dikes, kiln bricks, and river skiffs. |
+| **Harvest Ripe Date Palms (*Suluppu*)** | Riverbank Date Palm Groves | 3.5h / 20% | 8–20 `dates` baskets | Year-round food, energy recovery, Honey-Date Pastries (*mersu*), and high-price export. |
+| **Gather Wild River Emmer (*Zizzu*)** | Upper Alluvial Terraces | 3.5h / 20% | 15–35 `emmer` qa | Hulled ancient wheat for Golden Spelt Beer (*ulušinnu*) and estate seed stock. |
 
 ---
 
@@ -293,22 +299,30 @@ As Governor (*Rabiānum*) of Babylon, you hold executive authority to decree mun
 
 ---
 
-## 10. Agricultural Year & Incremental Sowing System
+## 10. Agricultural Year & Incremental Dual-Crop Sowing System
 
-The farming subsystem realistically tracks seasonal field states to eliminate infinite harvest exploits:
+The farming subsystem realistically tracks seasonal field states to eliminate infinite harvest exploits while supporting authentic Mesopotamian polyculture:
 
-1. **Autumn Plowing & Sowing (Incremental):**
-   - Sowing requires **10 qa seed barley per acre**.
-   - The game tracks `owned_land_acres` and `sowed_acres`.
-   - If you sow 10 acres, and then purchase 5 more acres, you **only plow and sow the remaining 5 unseeded acres**, without having to re-sow or pay for existing crops again!
+1. **Autumn Plowing & Sowing (Incremental Dual-Crop Choice):**
+   - The estate tracks `owned_land_acres`, `sowed_acres`, `sowed_barley_acres`, and `sowed_emmer_acres`.
+   - You can choose which crop to sow on unseeded acreage:
+     - **[1] Barley Grain (*še'u*)**: Consumes **10 qa barley per acre** from your granary/wallet. The primary caloric currency of Babylon.
+     - **[2] Emmer Wheat (*zizzu*)**: Consumes **10 qa emmer per acre** from your inventory sacks. Premium ancient wheat used for luxury spelt beer and temple pastries.
+   - You can divide your estate however you wish (e.g. 50 acres barley and 50 acres emmer).
+   - If you sow 10 acres, and then buy 5 more acres, you **only plow and sow the remaining 5 unseeded acres** without disturbing your previously seeded crops!
 2. **Winter Canal Maintenance:**
-   - Clears silt and protects the dikes surrounding your sowed acreage from river floods.
+   - Clears silt and protects the dikes surrounding your sowed acreage from winter flash floods.
 3. **Spring Harvest (Single Annual Reaping):**
    - Fields can only be harvested **once per agricultural year** (`has_harvested_spring = True`).
-   - Yield is calculated strictly on **seeded land** (`sowed_acres`). Land purchased in Spring without prior Autumn sowing produces zero grain until the next cycle.
-   - The municipal tithe (*Šibšu*) is automatically remitted to the city silos.
-4. **Summer Reset:**
-   - Field stubble is grazed, and the seasonal harvest flag is reset for the next agricultural year.
+   - Yield is calculated strictly on **seeded land** (`sowed_barley_acres` and `sowed_emmer_acres`):
+     - **Barley:** 250–380 qa per acre $\times$ Oxen bonus $\times$ Agriculture skill. Net yield deposited directly into your Granary.
+     - **Emmer Wheat:** 230–350 qa per acre $\times$ Oxen bonus $\times$ Agriculture skill. Net yield deposited directly into your Inventory Sacks.
+   - The statutory municipal grain tithe (*Šibšu*, default 10%) is deducted and delivered to the Babylon Municipal Silos to feed the civic garrison.
+   - Wool is also sheared from owned sheep (2.5 talents per sheep).
+4. **Summer Date Harvest & Pasture Reset:**
+   - During Summer, field stubble is grazed by livestock, resetting the annual harvest flag.
+   - Estate owners can tend canal-side date palm groves (`[1]`), harvesting **5–15 baskets of sweet dates** (*suluppu*).
+   - Alternatively, citizens can forage date groves year-round (`[7]->[8]`) or dispatch industrial Corvée Date Harvesters (`[8]->[8]`).
 
 ---
 
