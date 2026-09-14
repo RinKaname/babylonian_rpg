@@ -859,6 +859,9 @@ class BabylonianGame:
             elif act == "8":
                 self.handle_corvee_forage()
 
+            elif act == "9":
+                self.handle_mining_outpost()
+
             elif act == "0":
                 break
 
@@ -1181,8 +1184,8 @@ class BabylonianGame:
                 print(f"     Cargo Delivered:   Ox-carts delivered {yield_desc} straight to your estate sacks!")
                 print("=" * 70)
 
-            elif act == "9":
-                self.handle_mining_outpost()
+            else:
+                print(" [!] Invalid labor gang option.")
 
     def handle_workshop(self):
         """Artisan workshops, batch manufacturing, facility upgrades & labor wage management."""
