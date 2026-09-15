@@ -614,10 +614,11 @@ class PopGroup:
         return demands
 
     def update_standard_of_living(self, market: Market):
-        """Updates pop happiness, wealth drift, and radicalism based on inflation and food access."""
+        """Updates pop happiness, wealth drift, radicalism, and population growth based on inflation and food access."""
         cpi = market.calculate_cpi()
         food_shortage = market.is_in_shortage("barley") and market.is_in_shortage("dates")
 
+        # 1. Update SoL and Radicalism
         if food_shortage:
             self.standard_of_living = max(1.0, self.standard_of_living - 1.5)
             self.unrest_radicalism = min(100.0, self.unrest_radicalism + 15.0)
@@ -629,6 +630,34 @@ class PopGroup:
             self.unrest_radicalism = max(0.0, self.unrest_radicalism - 2.0)
             if self.wealth_silver_per_capita > 50.0:
                 self.standard_of_living = min(20.0, self.standard_of_living + 0.2)
+
+        # 2. Demographic Growth (Victoria 3 Style: Births - Mortality)
+        base_birth_rate = 0.02  # 2% baseline birth rate per season
+        base_mortality = 0.015  # 1.5% baseline mortality per season
+
+        # Modify rates based on Standard of Living (SoL)
+        if self.standard_of_living >= 15.0:
+            # High wealth patricians: excellent healthcare/food, low mortality
+            mortality_modifier = -0.01
+            birth_modifier = 0.005
+        elif self.standard_of_living >= 8.0:
+            # Average commoners
+            mortality_modifier = 0.0
+            birth_modifier = 0.0
+        else:
+            # Destitute/Poor: high mortality
+            mortality_modifier = 0.02
+            birth_modifier = -0.005
+
+        # Severe penalty for actual starvation
+        if food_shortage:
+            mortality_modifier += 0.08  # Massive death wave
+
+        net_growth_rate = (base_birth_rate + birth_modifier) - (base_mortality + mortality_modifier)
+
+        # Apply growth to headcount (ensure it doesn't drop below 1 to prevent division by zero elsewhere)
+        new_headcount = int(self.headcount * (1.0 + net_growth_rate))
+        self.headcount = max(1, new_headcount)
 
 
 # ==============================================================================
