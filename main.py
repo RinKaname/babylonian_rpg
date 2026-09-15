@@ -2743,7 +2743,9 @@ class BabylonianGame:
                 print(f" Marriage Status: Bound to {contract.wife.full_name} under Code § 128")
                 print(f" Bride-Price (Terhatum): {contract.bride_price_silver:.1f} silver shekels")
                 print(f" Dowry in Custody:       {contract.dowry.silver_shekels:.1f} silver, {contract.dowry.land_acres:.1f} acres land, {contract.dowry.oxen} oxen")
+                print(f" Children Born:          {len(contract.children)}")
                 print(" [1] Seek Divorce Settlement under Code §§ 137-142")
+                print(" [3] Pray to Ninhursag for a Child (Cost: 2.0 silver offering)")
             else:
                 print(" Marriage Status: Unmarried (Visit the Ale-Wife's Tavern to meet suitors)")
 
@@ -2752,7 +2754,8 @@ class BabylonianGame:
             print(" [0] Return to City Square")
             print("-" * 70)
 
-            act = input(" Choose option [0-2]: ").strip()
+            opt_prompt = "0-3" if self.player_marriage_contract else "0-2"
+            act = input(f" Choose option [{opt_prompt}]: ").strip()
 
             if act == "1" and self.player_marriage_contract:
                 print("\n--- CODE OF HAMMURABI DIVORCE SETTLEMENT (§§ 137-142) ---")
@@ -2790,6 +2793,21 @@ class BabylonianGame:
                     if t.sealed_by:
                         print(f"     Seals Imprinted: {', '.join(t.sealed_by)}")
                 input("\n Press Enter to continue...")
+
+            elif act == "3" and self.player_marriage_contract:
+                cost = 2.0
+                if self.player.wallet.spend_silver(cost):
+                    name = input(" Enter the name of your new child: ").strip()
+                    if not name:
+                        name = "Awīl-ili"
+                    gender = "male" if random.random() > 0.5 else "female"
+                    child = self.player_marriage_contract.add_child(name=name, gender=gender, age=0)
+                    print(f"\n [★] BLESSING OF NINHURSAG!")
+                    print(f" Your wife has given birth to a {gender} child named {child.full_name}!")
+                    print(f" Legal Class: {child.social_class.value}")
+                    self.player.reputation = min(100.0, self.player.reputation + 5.0)
+                else:
+                    print(f" [-] You cannot afford the {cost:.1f} silver temple offering to the fertility goddess.")
 
             elif act == "0":
                 break
