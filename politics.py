@@ -143,6 +143,7 @@ class BabylonianPolitics:
         self.gate_customs_tariff_rate: float = 0.05  # 5% baseline
         self.temple_tithe_rate: float = 0.10         # 10% harvest tithe
         self.city_grain_reserve_target_gur: float = 100.0
+        self.temple_treasury_silver: float = 200.0   # Treasury for the Esagila Temple
         
         # Court & Judicial Records
         self.pending_lawsuits: List[JudicialCase] = []
@@ -284,6 +285,83 @@ class BabylonianPolitics:
         ]
         governor.reputation = min(100.0, governor.reputation + 15.0)
         return True, "\n".join(lines)
+
+    def set_temple_tithe(self, actor: Character, new_rate: float) -> Tuple[bool, str]:
+        """High Priest (Šangû) sets the religious tithe rate."""
+        if actor.civic_office != OfficeTitle.HIGH_PRIEST.value:
+            return False, "Only the High Priest (Šangû) can set the temple tithe rate."
+
+        if not (0.0 <= new_rate <= 0.30):
+            return False, "Tithe rate must be between 0% and 30%."
+
+        self.temple_tithe_rate = new_rate
+        if new_rate <= 0.05:
+            actor.reputation = min(100.0, actor.reputation + 5.0)
+            reaction = "Commoners praise your leniency!"
+        elif new_rate >= 0.20:
+            actor.reputation = max(0.0, actor.reputation - 10.0)
+            reaction = "The commoners grumble at the heavy burden."
+        else:
+            reaction = "The tithe is considered standard."
+
+        return True, f"High Priest {actor.name} decreed the temple tithe rate at {new_rate*100:.1f}%. {reaction}"
+
+    def host_akitu_festival(self, actor: Character) -> Tuple[bool, str]:
+        """High Priest (Šangû) hosts the Akitu New Year festival to gain reputation."""
+        if actor.civic_office != OfficeTitle.HIGH_PRIEST.value:
+            return False, "Only the High Priest (Šangû) can host the Akitu festival."
+
+        festival_cost = 50.0
+        if self.temple_treasury_silver < festival_cost:
+            return False, f"The Esagila temple treasury cannot afford the Akitu festival (needs {festival_cost} silver)."
+
+        self.temple_treasury_silver -= festival_cost
+        actor.reputation = min(100.0, actor.reputation + 20.0)
+
+        return True, (
+            f"=== AKITU FESTIVAL SPONSORED ===\n"
+            f" High Priest {actor.name} opened the temple storehouses for the New Year.\n"
+            f" Cost: {festival_cost} silver drawn from the Temple Treasury.\n"
+            f" [+] Massive public celebration! High Priest reputation surges by +20%!"
+        )
+
+    def divert_sacred_funds(self, actor: Character, amount: float) -> Tuple[bool, str]:
+        """High Priest (Šangû) embezzles from the temple treasury."""
+        if actor.civic_office != OfficeTitle.HIGH_PRIEST.value:
+            return False, "Only the High Priest (Šangû) has access to the temple treasury."
+
+        if self.temple_treasury_silver < amount:
+            return False, f"The temple treasury only has {self.temple_treasury_silver:.1f} silver shekels left."
+
+        if amount > 50.0:
+            # Get caught!
+            actor.reputation = max(0.0, actor.reputation - 25.0)
+            return False, f"[!] BLASPHEMY! The scribes caught High Priest {actor.name} attempting to steal {amount} silver! Reputation plummets!"
+
+        self.temple_treasury_silver -= amount
+        actor.wallet.add_silver(amount)
+        actor.reputation = max(0.0, actor.reputation - 2.0)
+
+        return True, (
+            f"[!] Corruption: High Priest {actor.name} quietly diverted {amount:.1f} silver shekels "
+            f"from the sacred loans into their personal vault."
+        )
+
+    def excommunicate_rival(self, actor: Character, rival: Character) -> Tuple[bool, str]:
+        """High Priest (Šangû) declares a rival ritually impure, destroying their reputation."""
+        if actor.civic_office != OfficeTitle.HIGH_PRIEST.value:
+            return False, "Only the High Priest (Šangû) can declare ritual impurity."
+
+        if rival == actor:
+            return False, "You cannot excommunicate yourself!"
+
+        rival.reputation = max(0.0, rival.reputation - 30.0)
+
+        return True, (
+            f"=== DECLARATION OF RITUAL IMPURITY ===\n"
+            f" High Priest {actor.name} has declared {rival.name} ritually impure and forbidden from entering the Esagila!\n"
+            f" [-] {rival.name}'s reputation collapses by -30%!"
+        )
 
     # --------------------------------------------------------------------------
     # Judicial Lawsuits & Litigation (Code of Hammurabi)
@@ -557,4 +635,28 @@ if __name__ == "__main__":
     patrician.civic_office = OfficeTitle.CITY_GOVERNOR.value # Promoted to Governor
     ok_misharum, misharum_report = gov_sys.petition_debt_jubilee_misharum(patrician)
     print(misharum_report)
+
+    # 7. High Priest Mechanics
+    print("\n" + "=" * 75)
+    print("--- Test 5: High Priest (Šangû) Mechanics ---")
+    patrician.civic_office = OfficeTitle.HIGH_PRIEST.value # Promoted to High Priest
+
+    # 7a. Set Tithe Rate
+    ok_tithe, tithe_msg = gov_sys.set_temple_tithe(patrician, 0.25)
+    print(tithe_msg)
+
+    # 7b. Host Akitu Festival
+    ok_akitu, akitu_msg = gov_sys.host_akitu_festival(patrician)
+    print(akitu_msg)
+
+    # 7c. Embezzle Funds
+    ok_embezzle, embezzle_msg = gov_sys.divert_sacred_funds(patrician, 20.0)
+    print(embezzle_msg)
+    print(f"Patrician Wallet after embezzlement: {patrician.wallet.silver_shekels:.2f} silver shekels")
+
+    # 7d. Excommunicate Rival
+    ok_excom, excom_msg = gov_sys.excommunicate_rival(patrician, rival_merchant)
+    print(excom_msg)
+    print(f"Rival Merchant Reputation: {rival_merchant.reputation:.1f}")
+
     print("=" * 75)

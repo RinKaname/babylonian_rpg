@@ -2001,26 +2001,15 @@ class BabylonianGame:
                 c_act = input(" Choose action [0-2]: ").strip()
                 if c_act == "1":
                     if "Canal Warden" in self.player.civic_office:
-                        skim = input(" Mobilize corvée labor to dredge river dikes? Skim maintenance silver (0-5)? ").strip()
-                        s_val = float(skim) if skim else 0.0
-                        ok, msg = self.politics.execute_canal_warden_dredging(self.player, skim_silver=s_val)
-                        print(msg)
+                        self.handle_canal_warden_powers()
                     elif "Market Overseer" in self.player.civic_office:
-                        t_str = input(" Set city gate import customs tariff rate (0% to 20%, e.g. 8)? ").strip()
-                        try:
-                            rate = float(t_str) / 100.0 if t_str else 0.05
-                            ok, msg = self.politics.set_gate_customs_tariff(self.player, rate)
-                            print(msg)
-                        except ValueError:
-                            pass
+                        self.handle_market_overseer_powers()
                     elif "Governor" in self.player.civic_office:
                         self.handle_governor_powers()
                     elif "Magistrate" in self.player.civic_office:
-                        print(" [+] As Dayyānum, you reviewed contracts and enforced the stelae decrees of Shamash at the gate.")
-                        self.player.reputation = min(100.0, self.player.reputation + 2.0)
+                        self.handle_magistrate_powers()
                     elif "High Priest" in self.player.civic_office:
-                        print(" [+] As Šangû, you presided over libations of beer and sacrifices at the inner sanctum of Marduk.")
-                        self.player.reputation = min(100.0, self.player.reputation + 3.0)
+                        self.handle_high_priest_powers()
                     else:
                         print(" [+] Inspected public facilities and verified weights and measures.")
                 elif c_act == "2":
@@ -2074,6 +2063,144 @@ class BabylonianGame:
             ok, msg = self.politics.appoint_or_elect(self.player, target_office, bribe_silver=bribe, sponsor_feast=feast)
             print("\n" + msg)
             break
+
+
+    def handle_canal_warden_powers(self):
+        """Irrigation management and corvée labor execution."""
+        while True:
+            print("\n" + "=" * 78)
+            print("        IRRIGATION & PUBLIC WORKS (GUGALLUM / CANAL WARDEN)")
+            print("=" * 78)
+            print(f" Maintenance Funded: {'Yes' if self.politics.canal_maintenance_funded else 'No'}")
+            print("-" * 78)
+            print(" [1] Mobilize Corvée Labor to Dredge River Dikes")
+            print(" [0] Return to Civic Offices Menu")
+
+            choice = input(" Choose action [0-1]: ").strip()
+
+            if choice == "1":
+                skim = input(" Embezzle municipal maintenance silver to your vault (0-5)? ").strip()
+                try:
+                    s_val = float(skim) if skim else 0.0
+                    ok, msg = self.politics.execute_canal_warden_dredging(self.player, skim_silver=s_val)
+                    print(msg)
+                except ValueError:
+                    print(" Invalid input.")
+            elif choice == "0":
+                break
+
+    def handle_market_overseer_powers(self):
+        """Gate customs and market tariffs."""
+        while True:
+            print("\n" + "=" * 78)
+            print("        COMMERCE & GATES (RABI SIKKATIM / MARKET OVERSEER)")
+            print("=" * 78)
+            print(f" Current Gate Tariff: {self.politics.gate_customs_tariff_rate * 100:.1f}%")
+            print("-" * 78)
+            print(" [1] Set City Gate Import Customs Tariff Rate")
+            print(" [0] Return to Civic Offices Menu")
+
+            choice = input(" Choose action [0-1]: ").strip()
+
+            if choice == "1":
+                t_str = input(" Set tariff rate (0% to 20%, e.g. 8)? ").strip()
+                try:
+                    rate = float(t_str) / 100.0 if t_str else 0.05
+                    ok, msg = self.politics.set_gate_customs_tariff(self.player, rate)
+                    print(msg)
+                except ValueError:
+                    print(" Invalid input.")
+            elif choice == "0":
+                break
+
+    def handle_high_priest_powers(self):
+        """Executive sacred governance: Esagila Temple tithes, festivals, and ritual purity."""
+        while True:
+            print("\n" + "=" * 78)
+            print("        SACRED GOVERNANCE & ESAGILA ADMINISTRATION (ŠANGÛ / HIGH PRIEST)")
+            print("=" * 78)
+            print(f" Temple Treasury: {self.politics.temple_treasury_silver:.2f} silver shekels")
+            print(f" Current Tithe:   {self.politics.temple_tithe_rate * 100:.1f}%")
+            print("-" * 78)
+            print(" [1] Set Temple Tithe Rate")
+            print(" [2] Host Akitu (New Year) Festival")
+            print(" [3] Divert Sacred Funds (Embezzle)")
+            print(" [4] Declare Political Rival Ritually Impure")
+            print(" [0] Return to Civic Offices Menu")
+
+            choice = input(" Choose action [0-4]: ").strip()
+
+            if choice == "1":
+                t_str = input(" Set temple tithe rate (0% to 30%, e.g. 10)? ").strip()
+                try:
+                    rate = float(t_str) / 100.0 if t_str else 0.10
+                    ok, msg = self.politics.set_temple_tithe(self.player, rate)
+                    print(msg)
+                except ValueError:
+                    print(" Invalid input.")
+            elif choice == "2":
+                ok, msg = self.politics.host_akitu_festival(self.player)
+                print(msg)
+            elif choice == "3":
+                amt_str = input(" Amount of silver to quietly divert to your personal vault? ").strip()
+                try:
+                    amt = float(amt_str)
+                    ok, msg = self.politics.divert_sacred_funds(self.player, amt)
+                    print(msg)
+                except ValueError:
+                    print(" Invalid input.")
+            elif choice == "4":
+                print(" Select rival to declare impure:")
+                target_npcs = [npc for name, npc in self.npcs.items() if npc != self.player and npc.social_class == SocialClass.AWILUM]
+                for idx, npc in enumerate(target_npcs):
+                    print(f" [{idx + 1}] {npc.full_name} (Reputation: {npc.reputation:.1f})")
+                r_choice = input(" Choose rival or [0] to cancel: ").strip()
+                try:
+                    r_idx = int(r_choice) - 1
+                    if 0 <= r_idx < len(target_npcs):
+                        ok, msg = self.politics.excommunicate_rival(self.player, target_npcs[r_idx])
+                        print(msg)
+                except ValueError:
+                    pass
+            elif choice == "0":
+                break
+
+    def handle_magistrate_powers(self):
+        """Judicial trials at the Gate of Shamash."""
+        while True:
+            print("\n" + "=" * 78)
+            print("        JUSTICE AT THE GATE OF SHAMASH (DAYYĀNUM / CITY MAGISTRATE)")
+            print("=" * 78)
+            pending = [c for c in self.politics.pending_lawsuits if not c.is_resolved]
+            print(f" Pending Cases: {len(pending)}")
+            print("-" * 78)
+            print(" [1] Review and Adjudicate Pending Lawsuit")
+            print(" [0] Return to Civic Offices Menu")
+
+            choice = input(" Choose action [0-1]: ").strip()
+
+            if choice == "1":
+                if not pending:
+                    print(" There are no pending cases on the clay docket.")
+                    continue
+
+                print(" Select case to hear:")
+                for idx, case in enumerate(pending):
+                    print(f" [{idx + 1}] {case.case_id}: {case.accuser.name} vs. {case.defendant.name} ({case.charge.value})")
+
+                c_choice = input(" Choose case or [0] to cancel: ").strip()
+                try:
+                    c_idx = int(c_choice) - 1
+                    if 0 <= c_idx < len(pending):
+                        selected_case = pending[c_idx]
+                        bribe_str = input(f" Does {selected_case.defendant.name} offer a bribe for acquittal? (Enter silver amount, 0 for none): ").strip()
+                        bribe = float(bribe_str) if bribe_str else 0.0
+                        ok, msg = self.politics.adjudicate_case(selected_case, self.player, bribe_from_defendant=bribe)
+                        print(msg)
+                except ValueError:
+                    print(" Invalid input.")
+            elif choice == "0":
+                break
 
     def handle_governor_powers(self):
         """Executive governance of Babylon: city defense, gate garrisons, levies, and military campaigns."""
