@@ -3429,7 +3429,14 @@ class BabylonianGame:
         """Starts the main interactive gameplay experience."""
         self.setup_player_interactive()
 
-        while self.player and self.player.is_alive:
+        while True:
+            if not self.player or not self.player.is_alive:
+                self.handle_death()
+                if not self.player or not self.player.is_alive:
+                    break # Game over completely
+                else:
+                    continue # Inherited, keep playing!
+
             self.render_dashboard()
             self.print_menu()
             choice = input(" Select action [0-9]: ").strip()
@@ -3462,12 +3469,66 @@ class BabylonianGame:
             else:
                 print(" [!] Unknown command. Please select 0-9 or E.")
 
+    def handle_death(self):
         if self.player and not self.player.is_alive:
             print("\n" + "=" * 78)
             print("                           YOU HAVE DIED")
             print(" Your shade descends to the dark underworld of Kur, beneath the dust.")
-            print(" Your cylinder seal is buried in your ancestral family tomb.")
             print("=" * 78)
+
+            # Inheritance System
+            heir_selected = False
+            if self.player_marriage_contract and self.player_marriage_contract.children:
+                adult_children = [c for c in self.player_marriage_contract.children if c.age >= 15]
+                if adult_children:
+                    while True:
+                        print("\n Your estate must be settled. The following heirs have come of age:")
+                        for idx, c in enumerate(adult_children):
+                            print(f" [{idx + 1}] {c.full_name} (Age: {c.age}, Literacy: {c.skills.literacy}, Oratory: {c.skills.oratory})")
+
+                        choice = input(" Select an heir to continue your dynasty (or [0] to pass into history): ").strip()
+                        try:
+                            c_idx = int(choice) - 1
+                            if c_idx == -1:
+                                break
+                            if 0 <= c_idx < len(adult_children):
+                                heir = adult_children[c_idx]
+                                print(f"\n [+] {heir.full_name} takes up your cylinder seal and inherits the estate!")
+
+                                # Transfer Assets
+                                heir.wallet = self.player.wallet
+                                heir.inventory = self.player.inventory
+                                heir.tablets = self.player.tablets
+                                heir.cylinder_seal = self.player.cylinder_seal
+                                heir.owned_land_acres = self.player.owned_land_acres
+                                heir.owned_oxen = self.player.owned_oxen
+                                heir.owned_sheep = self.player.owned_sheep
+
+                                # Settle Widowhood & Dissolve Contract
+                                msg = self.marriage_mgr.settle_widowhood(self.player_marriage_contract, deceased="husband")
+                                print(f" [+] {msg}")
+
+                                self.player_marriage_contract = None
+
+                                # Promote Heir to Player
+                                heir.is_player = True
+                                heir.is_alive = True
+                                heir.health = 100.0
+                                heir.energy = 100.0
+                                heir.hunger = 0.0
+                                heir.thirst = 0.0
+
+                                self.player = heir
+                                heir_selected = True
+                                break
+                            else:
+                                print(" Invalid selection. Try again.")
+                        except ValueError:
+                            print(" Invalid input. Try again.")
+
+            if not heir_selected:
+                print(" Your cylinder seal is buried in your ancestral family tomb. Your lineage ends here.")
+                print("=" * 78)
 
 
 def run_automated_smoke_test():
