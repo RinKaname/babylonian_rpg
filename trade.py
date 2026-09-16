@@ -99,6 +99,7 @@ class ForeignMarketNode:
     hazard_risk_percent: float         # Risk of bandit raid or shipwreck per journey
     demand_multipliers: Dict[str, float]  # Foreign willingness to pay for Babylonian exports
     export_supplies: Dict[str, float]     # Foreign base price for raw imports (in silver shekels)
+    specialty: str = ""                   # Regional economic specialty & trade character
 
 
 class ForeignTradeDatabase:
@@ -111,32 +112,47 @@ class ForeignTradeDatabase:
                 name="Kanesh & The Levant (Anatolia)",
                 round_trip_days=14,  # 1 full season (14 in-game days)
                 hazard_risk_percent=15.0,
-                demand_multipliers={"woolen_cloth": 2.2, "dates": 1.6, "sesame_oil": 1.5},
-                export_supplies={"tin": 8.0, "timber": 3.5, "bronze_tools": 3.0}
+                demand_multipliers={
+                    "woolen_cloth": 2.2, "dates": 1.6, "sesame_oil": 1.5,
+                    "war_chariot": 1.5, "composite_bow": 1.6, "bronze_weapons": 1.5, "spelt_beer": 1.8
+                },
+                export_supplies={"tin": 8.0, "timber": 3.5, "bronze_tools": 3.0},
+                specialty="Mountain Minerals & Cedar Timber (Source of Cassiterite Tin & Mountain Pine)"
             ),
             TradeCorridor.DILMUN_ENTREPOT: ForeignMarketNode(
                 corridor=TradeCorridor.DILMUN_ENTREPOT,
                 name="Dilmun / Bahrain Gateway",
                 round_trip_days=5,   # ~1/3 season (5 in-game days)
                 hazard_risk_percent=5.0,
-                demand_multipliers={"barley": 1.4, "woolen_cloth": 1.3, "sesame_oil": 1.4},
-                export_supplies={"dried_fish": 0.20, "dates": 0.40, "bitumen": 0.70}
+                demand_multipliers={
+                    "barley": 1.4, "bread": 1.4, "woolen_cloth": 1.3, "sesame_oil": 1.4, "pottery": 1.6
+                },
+                export_supplies={"dried_fish": 0.20, "dates": 0.40, "bitumen": 0.70},
+                specialty="Gulf Maritime Entrepôt & Fisheries (Source of Bitumen, Pearls, and Dried Fish)"
             ),
             TradeCorridor.MAGAN_COAST: ForeignMarketNode(
                 corridor=TradeCorridor.MAGAN_COAST,
                 name="Magan / Oman Copper Coast",
                 round_trip_days=7,   # ~1/2 season (7 in-game days)
                 hazard_risk_percent=12.0,
-                demand_multipliers={"barley": 1.8, "bread": 1.5, "woolen_cloth": 1.5},
-                export_supplies={"copper_ore": 2.20, "mudbrick": 0.08}
+                demand_multipliers={
+                    "barley": 1.8, "bread": 1.5, "woolen_cloth": 1.5, "barley_beer": 1.6,
+                    "war_chariot": 1.4, "pottery": 1.5
+                },
+                export_supplies={"copper_ore": 2.20, "mudbrick": 0.08},
+                specialty="Great Copper Mountain Mines (Wholesale Raw Copper Ore at 45% Discount)"
             ),
             TradeCorridor.MELUHHA_INDUS: ForeignMarketNode(
                 corridor=TradeCorridor.MELUHHA_INDUS,
                 name="Meluhha / Indus Valley Civilization",
                 round_trip_days=28,  # 2 full seasons (28 in-game days)
                 hazard_risk_percent=20.0,
-                demand_multipliers={"woolen_cloth": 2.8, "sesame_oil": 2.0, "pottery": 1.8},
-                export_supplies={"cylinder_seal": 8.0, "perfume": 6.0}
+                demand_multipliers={
+                    "woolen_cloth": 2.8, "sesame_oil": 2.0, "pottery": 1.8,
+                    "war_chariot": 1.6, "composite_bow": 1.5, "spelt_beer": 2.0
+                },
+                export_supplies={"cylinder_seal": 8.0, "perfume": 6.0},
+                specialty="Oceanic Harappan Empire & Luxury Guilds (Source of Carved Seals and Rare Perfumes)"
             )
         }
 
@@ -161,6 +177,7 @@ class CaravanMission:
     is_completed: bool = False
     is_plundered_or_lost: bool = False
     net_profit_silver: float = 0.0
+    target_import: Optional[str] = None   # Specific good_id to buy, "BALANCED", or "PURE_SILVER"
 
 
 # ==============================================================================
@@ -187,12 +204,14 @@ class TradeManager:
         fleet: TransportFleet,
         cargo_to_export: Dict[str, float],
         silver_purse: float,
-        tamkarum_name: str = "Ur-Nungal, the Tamkarum"
+        tamkarum_name: str = "Ur-Nungal, the Tamkarum",
+        target_import: Optional[str] = None
     ) -> Tuple[bool, str, Optional[CaravanMission]]:
         """
         Assembles a merchant caravan in Babylon:
         1. Checks cargo weight vs fleet transport capacity.
-        2. Buys outbound goods from local domestic market (submitting Buy Orders).
+        2. Deducts cargo from personal inventory sacks (0 extra silver cost).
+           If player holds insufficient stock, purchases remainder from domestic market.
         3. Withdraws silver purse and grain fodder from investor's wallet.
         """
         node = self.nodes[corridor]
@@ -201,7 +220,8 @@ class TradeManager:
         total_weight_kg = 0.0
         for g_id, qty in cargo_to_export.items():
             g = self.registry.get(g_id)
-            total_weight_kg += g.weight_kg * qty
+            w = g.weight_kg if g else 1.0
+            total_weight_kg += w * qty
 
         if total_weight_kg > fleet.cargo_capacity_kg:
             return False, f"Cargo overload! Weighs {total_weight_kg:.1f} kg (Fleet capacity: {fleet.cargo_capacity_kg:.1f} kg).", None
@@ -211,29 +231,51 @@ class TradeManager:
         total_guard_silver = fleet.guard_cost_silver * node.round_trip_days
         total_silver_needed = silver_purse + total_guard_silver
 
-        # Step 3: Check Solvency
+        # Step 3: Check Solvency for provisions
         if investor.wallet.silver_shekels < total_silver_needed:
             return False, f"Insufficient silver! Needs {total_silver_needed:.1f} shekels (Purse: {silver_purse:.1f} + Guards: {total_guard_silver:.1f}).", None
 
         if investor.wallet.barley_qa < total_fodder_qa:
-            return False, f"Insufficient grain fodder! Needs {total_fodder_qa:.1f} qa for {node.round_trip_days} travel days.", None
+            return False, f"Insufficient grain fodder! Needs {total_fodder_qa:.0f} qa for {node.round_trip_days} travel days.", None
 
-        # Step 4: Purchase Domestic Export Cargo from Local Market
-        total_cargo_cost = 0.0
+        # Step 4: Cargo Acquisition (Inventory First, Market Difference Second)
+        market_purchase_cost = 0.0
+        cargo_from_inv: Dict[str, float] = {}
+        cargo_from_mkt: Dict[str, float] = {}
+
         for g_id, qty in cargo_to_export.items():
-            _, cost, _, _, _ = self.market.calculate_trade_pricing(g_id, qty, is_buy=True)
-            total_cargo_cost += cost
+            have_inv = investor.inventory.get(g_id, 0.0)
+            from_inv = min(have_inv, qty)
+            needed_mkt = qty - from_inv
+            if from_inv > 0:
+                cargo_from_inv[g_id] = from_inv
+            if needed_mkt > 0:
+                cargo_from_mkt[g_id] = needed_mkt
+                _, cost, _, _, _ = self.market.calculate_trade_pricing(g_id, needed_mkt, is_buy=True)
+                market_purchase_cost += cost
 
-        if investor.wallet.silver_shekels < (total_silver_needed + total_cargo_cost):
-            return False, f"Cannot afford domestic export cargo! Costs {total_cargo_cost:.1f} silver shekels on local market.", None
+        if investor.wallet.silver_shekels < (total_silver_needed + market_purchase_cost):
+            return False, f"Cannot afford export cargo! Buying shortage from market requires {market_purchase_cost:.1f} silver shekels.", None
 
-        # Execute Outbound Purchases
-        for g_id, qty in cargo_to_export.items():
+        # Deduct goods from player's inventory sacks
+        for g_id, qty in cargo_from_inv.items():
+            investor.inventory[g_id] -= qty
+            if investor.inventory[g_id] <= 1e-4:
+                investor.inventory.pop(g_id, None)
+
+        # Execute Outbound Purchases from Market if any
+        for g_id, qty in cargo_from_mkt.items():
             investor.buy_good(g_id, qty, self.market, self.registry)
+            investor.inventory[g_id] -= qty
+            if investor.inventory[g_id] <= 1e-4:
+                investor.inventory.pop(g_id, None)
 
-        # Deduct Travel Costs
+        # Deduct Travel Costs & Silver Purse
         investor.wallet.spend_silver(total_silver_needed)
         investor.wallet.spend_barley(total_fodder_qa)
+        investor.inventory["barley"] = investor.wallet.barley_qa
+        if investor.inventory.get("barley", 0.0) <= 0:
+            investor.inventory.pop("barley", None)
 
         # Create Mission
         mission_id = f"expedition_{self.mission_counter:04d}"
@@ -248,19 +290,23 @@ class TradeManager:
             outbound_cargo=cargo_to_export.copy(),
             return_cargo={},
             silver_capital_carried=silver_purse,
-            grain_fodder_carried=total_fodder_qa
+            grain_fodder_carried=total_fodder_qa,
+            target_import=target_import
         )
 
         self.active_missions.append(mission)
 
+        target_desc = f"Target Import: {target_import.upper()}" if target_import else "Target Import: BALANCED MIX"
         status_msg = (
             f"=== CARAVAN DEPARTURE: {mission.id.upper()} ===\n"
             f" Destination: {node.name} ({corridor.value})\n"
+            f" Specialty:   {node.specialty}\n"
             f" Tamkarum:    {tamkarum_name} | Fleet: {fleet.units_count} {fleet.transport_type.value}\n"
             f" Cargo Mass:  {total_weight_kg:.1f} kg / {fleet.cargo_capacity_kg:.1f} kg capacity\n"
-            f" Export Wares: " + ", ".join([f"{k}: {v:.1f}" for k, v in cargo_to_export.items()]) + "\n"
+            f" Export Wares:" + (", ".join([f"{k}: {v:.1f}" for k, v in cargo_to_export.items()]) if cargo_to_export else " None (Cash Arbitrage Only)") + "\n"
             f" Provisions:  {total_fodder_qa:.0f} qa grain fodder | {total_guard_silver:.1f} silver for guards\n"
             f" Silver Purse:{silver_purse:.1f} shekels carried for foreign purchases\n"
+            f" Directive:   {target_desc}\n"
             f" Expected Journey: {node.round_trip_days} days"
         )
         return True, status_msg, mission
@@ -270,8 +316,8 @@ class TradeManager:
         Resolves the return of a caravan mission:
         1. Rolls for travel hazards (bandits/storms).
         2. Sells exported goods at foreign markup.
-        3. Buys foreign goods with earned revenue + silver purse.
-        4. Injects imported goods into Babylon's domestic market (Sell Orders).
+        3. Buys foreign goods based on player's strategic target_import directive.
+        4. Injects imported goods into Babylon's domestic market and investor inventory.
         5. Deposits net silver profits into investor's wallet.
         """
         node = self.nodes[mission.corridor]
@@ -289,29 +335,51 @@ class TradeManager:
         # Step 2: Foreign Sales Execution (Selling Babylonian goods abroad)
         foreign_silver_earned = mission.silver_capital_carried
         lines.append(f" [+] Safe arrival at {node.name}!")
-        lines.append(f"     Sold outbound Babylonian wares on foreign markets:")
+        if mission.outbound_cargo:
+            lines.append(f"     Sold outbound Babylonian wares on foreign markets:")
+            for g_id, qty in mission.outbound_cargo.items():
+                g_obj = self.registry.get(g_id)
+                base_p = g_obj.base_price if g_obj else 1.0
+                mult = node.demand_multipliers.get(g_id, 1.20)
+                foreign_unit_price = round(base_p * mult, 2)
+                revenue = foreign_unit_price * qty
+                foreign_silver_earned += revenue
+                lines.append(f"       * {g_id}: {qty:.1f} units sold at {foreign_unit_price:.2f} silver/ea (+{revenue:.1f} shekels)")
+        else:
+            lines.append(f"     No outbound goods carried; Tamkarum traded solely with the {mission.silver_capital_carried:.1f} silver purse.")
 
-        for g_id, qty in mission.outbound_cargo.items():
-            base_p = self.registry.get(g_id).base_price
-            mult = node.demand_multipliers.get(g_id, 1.20)
-            foreign_unit_price = base_p * mult
-            revenue = foreign_unit_price * qty
-            foreign_silver_earned += revenue
-            lines.append(f"       * {g_id}: {qty:.1f} units sold at {foreign_unit_price:.2f} silver/ea (+{revenue:.1f} shekels)")
+        # Step 3: Purchase Foreign Strategic Imports according to Target Directive
+        lines.append(f"     Foreign Investment Execution (Available capital: {foreign_silver_earned:.1f} silver):")
+        acquired_cargo: Dict[str, float] = {}
+        target = mission.target_import or "BALANCED"
 
-        # Step 3: Purchase Foreign Strategic Imports
-        # Allocate foreign purse to buy foreign goods
-        lines.append(f"     Acquired foreign strategic imports for return voyage:")
-        acquired_cargo = {}
-        for imp_id, foreign_price in node.export_supplies.items():
-            # Spend up to 40% of purse per available foreign good
-            spend_allowance = foreign_silver_earned * 0.40
-            units_bought = math.floor(spend_allowance / max(0.1, foreign_price))
+        if target == "PURE_SILVER":
+            lines.append(f"     [Directive: PURE SILVER] Bypassed foreign commodities; returning 100% capital in liquid silver coin!")
+        elif target in node.export_supplies:
+            # Concentrated single-product import: Spend up to 85% of total purse on this specific good!
+            foreign_price = node.export_supplies[target]
+            spend_allowance = foreign_silver_earned * 0.85
+            units_bought = math.floor(spend_allowance / max(0.01, foreign_price))
             if units_bought > 0:
                 cost = units_bought * foreign_price
                 foreign_silver_earned -= cost
-                acquired_cargo[imp_id] = units_bought
-                lines.append(f"       * {imp_id}: {units_bought} units bought at {foreign_price:.2f} silver/ea (-{cost:.1f} shekels)")
+                acquired_cargo[target] = float(units_bought)
+                lines.append(f"     [Directive: {target.upper()}] Concentrated purchases on foreign strategic supply:")
+                lines.append(f"       * {target}: {units_bought} units bought at wholesale {foreign_price:.2f} silver/ea (-{cost:.1f} shekels)")
+        else:
+            # Balanced allocation across all available foreign exports
+            lines.append(f"     [Directive: BALANCED MIX] Acquired balanced mix of foreign strategic imports:")
+            avail_goods = list(node.export_supplies.items())
+            if avail_goods:
+                portion = 0.80 / len(avail_goods)
+                for imp_id, foreign_price in avail_goods:
+                    spend_allowance = foreign_silver_earned * portion
+                    units_bought = math.floor(spend_allowance / max(0.01, foreign_price))
+                    if units_bought > 0:
+                        cost = units_bought * foreign_price
+                        foreign_silver_earned -= cost
+                        acquired_cargo[imp_id] = float(units_bought)
+                        lines.append(f"       * {imp_id}: {units_bought} units bought at {foreign_price:.2f} silver/ea (-{cost:.1f} shekels)")
 
         mission.return_cargo = acquired_cargo
 
@@ -328,7 +396,8 @@ class TradeManager:
             investor.inventory[imp_id] = investor.inventory.get(imp_id, 0.0) + qty
 
         foreign_silver_earned = max(0.0, foreign_silver_earned - customs_paid)
-        lines.append(f"     Paid City Gate customs tariff (Miklū): {customs_paid:.2f} silver shekels")
+        if customs_paid > 0:
+            lines.append(f"     Paid City Gate customs tariff (Miklū): {customs_paid:.2f} silver shekels")
         lines.append(f"     Deposited remaining silver coin into investor's vault: +{foreign_silver_earned:.1f} shekels")
 
         investor.wallet.add_silver(foreign_silver_earned)

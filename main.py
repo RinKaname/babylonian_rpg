@@ -471,11 +471,11 @@ class BabylonianGame:
                 stk = self.market.get_stock(g_id)
                 unit_suffix = "qa" if g_id in ("barley", "emmer") else "ea"
                 stk_str = f"{stk:6.1f} {unit_suffix}"
-                shortage = "[SHORTAGE!]" if self.market.is_in_shortage(g_id) else "Abundant" if cur_p < g.base_price * 0.85 else "Fair Market"
+                shortage = "[SHORTAGE!]" if self.market.is_in_shortage(g_id) else "High Demand" if cur_p > g.base_price * 1.15 else "Abundant" if cur_p < g.base_price * 0.85 else "Fair Market"
                 print(f" {g.name:<19} | {g.base_price:6.2f} silv | {cur_p:6.3f} silv/ea | {stk_str:<11} | {shortage}")
 
             print("-" * 74)
-            print(" [B]uy Good  |  [S]ell Good  |  [V]iew All 29 Goods  |  [R]eturn to City Square")
+            print(" [B]uy Good  |  [S]ell Good  |  [V]iew All Goods  |  [R]eturn to City Square")
             cmd = input(" Select market action [B/S/V/R]: ").strip().lower()
 
             if cmd == "b":
@@ -554,12 +554,17 @@ class BabylonianGame:
                     print(" [!] You do not possess that commodity.")
 
             elif cmd == "v":
-                print("\n=== COMPLETE MESOPOTAMIAN COMMODITY REGISTRY (29 GOODS) ===")
+                total_count = len(self.registry.goods)
+                print(f"\n=== COMPLETE MESOPOTAMIAN COMMODITY REGISTRY ({total_count} GOODS) ===")
+                print(f" {'Commodity':<27} ({'ID':<15}) | {'Base':<11} | {'Market Price':<14} | {'In Stock':<12} | Status")
+                print("-" * 92)
                 for gid, good in sorted(self.registry.goods.items()):
                     p = self.market.get_price(gid)
                     stk = self.market.get_stock(gid)
                     unit_suffix = "qa" if gid in ("barley", "emmer") else "ea"
-                    print(f"  {good.name:<22} ({gid:<15}) | Base: {good.base_price:6.2f} | Spot: {p:6.3f} silv | Stock: {stk:6.1f} {unit_suffix}")
+                    stk_str = f"{stk:6.1f} {unit_suffix}"
+                    status = "[SHORTAGE!]" if self.market.is_in_shortage(gid) else "High Demand" if p > good.base_price * 1.15 else "Abundant" if p < good.base_price * 0.85 else "Fair Market"
+                    print(f"  {good.name:<26} ({gid:<15}) | {good.base_price:6.2f} silv | {p:6.3f} silv/ea | {stk_str:<12} | {status}")
                 input("\n Press Enter to return to market menu...")
 
             elif cmd == "r":
@@ -1943,19 +1948,123 @@ class BabylonianGame:
         purse_str = input(" How much trading silver purse to entrust to the Tamkarum (e.g. 10-50 silver)? ").strip()
         try:
             purse = float(purse_str)
-            if purse < 5.0 or (purse + guards_silver) > self.player.wallet.silver_shekels:
+            if purse < 0.0 or (purse + guards_silver) > self.player.wallet.silver_shekels:
                 print(" [!] Invalid or unaffordable trading purse.")
                 return
         except ValueError:
             print(" [!] Invalid number.")
             return
 
-        # Prepare export goods if available
+        # Step 4: Interactive Cargo Loading from Player's Personal Sacks
         cargo: Dict[str, float] = {}
-        if self.player.inventory.get("woolen_cloth", 0.0) >= 2.0:
-            cargo["woolen_cloth"] = 2.0
-        if self.player.inventory.get("dates", 0.0) >= 5.0:
-            cargo["dates"] = 5.0
+        cap_kg = fleet.cargo_capacity_kg
+        used_kg = 0.0
+
+        print("\n" + "=" * 70)
+        print(f"          CARGO LOADING DOCK (Fleet Capacity: {cap_kg:.1f} kg)")
+        print("=" * 70)
+        print(" Select goods from your sacks to pack into the caravan for foreign sale.")
+
+        # Display eligible goods held in player's inventory
+        exportable = [(gid, qty) for gid, qty in self.player.inventory.items() if qty > 0.0 and gid not in ("barley",)]
+        if exportable:
+            print(" Available in your sacks:")
+            for gid, qty in exportable:
+                g = self.registry.get(gid)
+                w = g.weight_kg if g else 1.0
+                base_p = g.base_price if g else 1.0
+                mult = node.demand_multipliers.get(gid, 1.20)
+                f_price = round(base_p * mult, 2)
+                bonus_str = f" [★ PREMIUM {mult:.1f}x!]" if mult > 1.20 else ""
+                print(f"  * {gid:<18}: {qty:5.1f} available ({w:4.1f} kg/ea) -> Foreign Price: {f_price:6.2f} silv{bonus_str}")
+        else:
+            print(" (No non-grain commodities currently held in your sacks.)")
+
+        print("-" * 70)
+        print(" Options: Type good ID to load, '[A]' to auto-pack top wares, or press Enter / '[D]' to finish loading.")
+
+        while True:
+            rem_kg = cap_kg - used_kg
+            if rem_kg <= 0.1:
+                print(f" [+] Fleet is fully loaded! ({used_kg:.1f} kg / {cap_kg:.1f} kg)")
+                break
+
+            load_in = input(f" Load good [ID / A=Auto / D=Done, Loaded: {used_kg:.1f}/{cap_kg:.1f} kg]: ").strip().lower()
+            if load_in in ("", "d", "done"):
+                break
+            elif load_in in ("a", "auto"):
+                # Auto-pack highest foreign-value items that fit remaining weight
+                sorted_goods = sorted(
+                    [(gid, self.player.inventory[gid]) for gid, _ in exportable if self.player.inventory.get(gid, 0.0) > cargo.get(gid, 0.0)],
+                    key=lambda x: (self.registry.get(x[0]).base_price * node.demand_multipliers.get(x[0], 1.20)) / max(0.1, self.registry.get(x[0]).weight_kg),
+                    reverse=True
+                )
+                packed_any = False
+                for gid, total_avail in sorted_goods:
+                    rem_avail = total_avail - cargo.get(gid, 0.0)
+                    if rem_avail <= 0:
+                        continue
+                    w = self.registry.get(gid).weight_kg
+                    max_by_wt = int(rem_kg // max(0.01, w)) if w > 0 else int(rem_avail)
+                    take = min(int(rem_avail), max_by_wt)
+                    if take > 0:
+                        cargo[gid] = cargo.get(gid, 0.0) + float(take)
+                        used_kg += take * w
+                        rem_kg = cap_kg - used_kg
+                        packed_any = True
+                        print(f"  [+] Auto-loaded {take} {gid} (+{take * w:.1f} kg).")
+                if not packed_any:
+                    print("  [!] No more eligible inventory fits remaining fleet capacity.")
+                break
+            elif load_in in self.player.inventory and self.player.inventory[load_in] > 0:
+                gid = load_in
+                w = self.registry.get(gid).weight_kg
+                rem_avail = self.player.inventory[gid] - cargo.get(gid, 0.0)
+                if rem_avail <= 0:
+                    print(f"  [!] You have already loaded all your {gid}.")
+                    continue
+                max_fit = int(rem_kg // max(0.01, w)) if w > 0 else int(rem_avail)
+                max_loadable = min(int(rem_avail), max_fit)
+                if max_loadable <= 0:
+                    print(f"  [!] Not enough weight capacity left for even 1 {gid} (Weighs {w:.1f} kg, Remaining capacity: {rem_kg:.1f} kg).")
+                    continue
+
+                q_str = input(f" How many {gid} to load [1-{max_loadable}, default={max_loadable}]? ").strip()
+                try:
+                    q_val = float(q_str) if q_str else float(max_loadable)
+                    q_val = min(float(max_loadable), max(1.0, q_val))
+                    cargo[gid] = cargo.get(gid, 0.0) + q_val
+                    used_kg += q_val * w
+                    print(f"  [+] Loaded {q_val:.0f} {gid} (+{q_val*w:.1f} kg).")
+                except ValueError:
+                    print("  [!] Invalid number.")
+            else:
+                print("  [!] Commodity not available in your sacks.")
+
+        # Step 5: Strategic Import Directive Selection
+        print("\n" + "=" * 70)
+        print(f"          STRATEGIC RETURN IMPORT DIRECTIVE ({node.name.upper()})")
+        print("=" * 70)
+        print(" How should the Tamkarum invest your foreign sales revenue and silver purse?")
+        imp_list = list(node.export_supplies.items())
+        for idx, (imp_id, f_price) in enumerate(imp_list, start=1):
+            local_p = self.market.get_price(imp_id)
+            print(f" [{idx}] Prioritize {imp_id:<14} (Foreign: {f_price:5.2f} silv/ea | Babylon Spot: {local_p:5.2f} silv/ea)")
+        print(f" [A] Balanced Assortment   (Evenly distribute investment across all {len(imp_list)} foreign wares)")
+        print(f" [S] Pure Silver Coin Only (Do not buy goods; repatriate 100% of capital in liquid silver!)")
+        print("-" * 70)
+
+        imp_choice = input(f" Choose import directive [1-{len(imp_list)}, A, S, default=A]: ").strip().lower()
+        target_import = "BALANCED"
+        try:
+            choice_num = int(imp_choice)
+            if 1 <= choice_num <= len(imp_list):
+                target_import = imp_list[choice_num - 1][0]
+        except ValueError:
+            if imp_choice in ("s", "silver"):
+                target_import = "PURE_SILVER"
+            else:
+                target_import = "BALANCED"
 
         print("\n Assembling caravan with Tamkarum Ur-Nungal...")
         ok, msg, mission = self.trade_mgr.assemble_caravan(
@@ -1963,7 +2072,8 @@ class BabylonianGame:
             corridor=corridor,
             fleet=fleet,
             cargo_to_export=cargo,
-            silver_purse=purse
+            silver_purse=purse,
+            target_import=target_import
         )
         print(msg)
 
