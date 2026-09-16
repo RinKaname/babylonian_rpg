@@ -2746,6 +2746,8 @@ class BabylonianGame:
                 print(f" Children Born:          {len(contract.children)}")
                 print(" [1] Seek Divorce Settlement under Code §§ 137-142")
                 print(" [3] Pray to Ninhursag for a Child (Cost: 2.0 silver offering)")
+                if len(contract.children) > 0:
+                    print(" [4] Send Child to the Eduba (Scribal School) - Cost: 5.0 silver")
             else:
                 print(" Marriage Status: Unmarried (Visit the Ale-Wife's Tavern to meet suitors)")
 
@@ -2754,7 +2756,11 @@ class BabylonianGame:
             print(" [0] Return to City Square")
             print("-" * 70)
 
-            opt_prompt = "0-3" if self.player_marriage_contract else "0-2"
+            if self.player_marriage_contract:
+                opt_prompt = "0-4" if len(self.player_marriage_contract.children) > 0 else "0-3"
+            else:
+                opt_prompt = "0-2"
+
             act = input(f" Choose option [{opt_prompt}]: ").strip()
 
             if act == "1" and self.player_marriage_contract:
@@ -2809,6 +2815,33 @@ class BabylonianGame:
                 else:
                     print(f" [-] You cannot afford the {cost:.1f} silver temple offering to the fertility goddess.")
 
+            elif act == "4" and self.player_marriage_contract and len(self.player_marriage_contract.children) > 0:
+                print("\n--- THE EDUBA (SCRIBAL TABLET HOUSE) ---")
+                print(" Select a child to receive a scribal education (Requires Age >= 5):")
+                valid_children = [c for c in self.player_marriage_contract.children if c.age >= 5]
+                if not valid_children:
+                    print(" [-] None of your children are old enough (Must be 5 years or older).")
+                    continue
+
+                for idx, c in enumerate(valid_children):
+                    print(f" [{idx + 1}] {c.full_name} (Age: {c.age}, Literacy: {c.skills.literacy})")
+
+                c_choice = input(" Choose child or [0] to cancel: ").strip()
+                try:
+                    c_idx = int(c_choice) - 1
+                    if 0 <= c_idx < len(valid_children):
+                        tuition = 5.0
+                        if self.player.wallet.spend_silver(tuition):
+                            selected_child = valid_children[c_idx]
+                            selected_child.skills.literacy += 1
+                            selected_child.skills.oratory += 1
+                            print(f"\n [+] {selected_child.name} has attended the Eduba!")
+                            print(f"     Paid {tuition:.1f} silver. Literacy increased to {selected_child.skills.literacy}.")
+                        else:
+                            print(f" [-] You cannot afford the {tuition:.1f} silver tuition fee.")
+                except ValueError:
+                    pass
+
             elif act == "0":
                 break
 
@@ -2849,6 +2882,16 @@ class BabylonianGame:
             self.sowed_acres = 0.0
             self.sowed_barley_acres = 0.0
             self.sowed_emmer_acres = 0.0
+
+            # Aging Mechanic: Everyone ages 1 year
+            if self.player:
+                self.player.age += 1
+            for npc in self.npcs.values():
+                npc.age += 1
+            if self.player_marriage_contract:
+                for child in self.player_marriage_contract.children:
+                    child.age += 1
+            self.news_ticker.append("A new year begins. The citizens of Babylon grow one year older.")
         elif self.season_idx == 3:  # Entering Summer (Spring harvest concluded)
             self.has_harvested_spring = False
 
