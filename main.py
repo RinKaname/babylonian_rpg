@@ -1894,10 +1894,10 @@ class BabylonianGame:
         print("          THE TAMKARUM MERCHANTS' GUILD & CARAVAN QUAY")
         print("=" * 70)
         print(" Foreign Trade Corridors:")
-        print(" [1] Anatolia & Levant (Overland: Tin, Cedar Timber, Silver) - 90 Days")
-        print(" [2] Dilmun / Bahrain (Gulf Entrepôt: Pearls, Dates, Bitumen) - 30 Days")
-        print(" [3] Magan / Oman (Copper Coast: Raw Copper Ore) - 60 Days")
-        print(" [4] Meluhha / Indus Valley (Oceanic East: Lapis Lazuli, Carnelian) - 120 Days")
+        print(" [1] Anatolia & Levant (Overland: Tin, Cedar Timber, Silver) - 14 Days (1 Season)")
+        print(" [2] Dilmun / Bahrain (Gulf Entrepôt: Pearls, Dates, Bitumen) - 5 Days (~⅓ Season)")
+        print(" [3] Magan / Oman (Copper Coast: Raw Copper Ore) - 7 Days (~½ Season)")
+        print(" [4] Meluhha / Indus Valley (Oceanic East: Lapis Lazuli, Carnelian) - 28 Days (2 Seasons)")
         print(" [0] Return to City Square")
         print("-" * 70)
 
@@ -1975,6 +1975,7 @@ class BabylonianGame:
             time.sleep(0.5)
 
             # Resolve the expedition
+            self.advance_hours(2.0)
             success, report = self.trade_mgr.resolve_mission(mission, self.player)
             print("\n" + report)
 

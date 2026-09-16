@@ -109,7 +109,7 @@ class ForeignTradeDatabase:
             TradeCorridor.ANATOLIA_LEVANT: ForeignMarketNode(
                 corridor=TradeCorridor.ANATOLIA_LEVANT,
                 name="Kanesh & The Levant (Anatolia)",
-                round_trip_days=90,  # ~1 season
+                round_trip_days=14,  # 1 full season (14 in-game days)
                 hazard_risk_percent=15.0,
                 demand_multipliers={"woolen_cloth": 2.2, "dates": 1.6, "sesame_oil": 1.5},
                 export_supplies={"tin": 8.0, "timber": 3.5, "bronze_tools": 3.0}
@@ -117,7 +117,7 @@ class ForeignTradeDatabase:
             TradeCorridor.DILMUN_ENTREPOT: ForeignMarketNode(
                 corridor=TradeCorridor.DILMUN_ENTREPOT,
                 name="Dilmun / Bahrain Gateway",
-                round_trip_days=30,
+                round_trip_days=5,   # ~1/3 season (5 in-game days)
                 hazard_risk_percent=5.0,
                 demand_multipliers={"barley": 1.4, "woolen_cloth": 1.3, "sesame_oil": 1.4},
                 export_supplies={"dried_fish": 0.20, "dates": 0.40, "bitumen": 0.70}
@@ -125,7 +125,7 @@ class ForeignTradeDatabase:
             TradeCorridor.MAGAN_COAST: ForeignMarketNode(
                 corridor=TradeCorridor.MAGAN_COAST,
                 name="Magan / Oman Copper Coast",
-                round_trip_days=60,
+                round_trip_days=7,   # ~1/2 season (7 in-game days)
                 hazard_risk_percent=12.0,
                 demand_multipliers={"barley": 1.8, "bread": 1.5, "woolen_cloth": 1.5},
                 export_supplies={"copper_ore": 2.20, "mudbrick": 0.08}
@@ -133,7 +133,7 @@ class ForeignTradeDatabase:
             TradeCorridor.MELUHHA_INDUS: ForeignMarketNode(
                 corridor=TradeCorridor.MELUHHA_INDUS,
                 name="Meluhha / Indus Valley Civilization",
-                round_trip_days=120, # ~2 seasons
+                round_trip_days=28,  # 2 full seasons (28 in-game days)
                 hazard_risk_percent=20.0,
                 demand_multipliers={"woolen_cloth": 2.8, "sesame_oil": 2.0, "pottery": 1.8},
                 export_supplies={"cylinder_seal": 8.0, "perfume": 6.0}
@@ -355,7 +355,7 @@ if __name__ == "__main__":
     # 1. Setup Merchant Prince Iddin-Marduk
     investor = Character("Iddin-Marduk", "Nabu-ahhe-iddin", SocialClass.AWILUM)
     investor.wallet.silver_shekels = 200.0  # Wealthy merchant capital
-    investor.wallet.barley_qa = 2400.0      # 8 gur grain fodder (sufficient for 1,800 qa requirement)
+    investor.wallet.barley_qa = 600.0       # 2 gur grain fodder (sufficient for 280 qa requirement)
 
     print("\n--- Investor Starting Profile ---")
     print(investor.get_status_report())
@@ -379,7 +379,7 @@ if __name__ == "__main__":
     # 3. Simulate Resolution of the Caravan Mission
     if ok and mission:
         print("\n" + "=" * 75)
-        print("Simulating 90-day return voyage from Anatolia...\n")
+        print("Simulating 14-day return voyage from Anatolia (1 full season)...\n")
         success, return_report = trade_mgr.resolve_mission(mission, investor)
         print(return_report)
 

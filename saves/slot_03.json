@@ -2,7 +2,7 @@
   "year": 1,
   "season_idx": 0,
   "day": 3,
-  "hour": 13.352004441063968,
+  "hour": 14.352004441063968,
   "days_per_season": 14,
   "workshop_tier": 1,
   "hired_artisans": 0,
@@ -14,26 +14,39 @@
   "player": {
     "name": "Chakra",
     "patronymic": "",
-    "social_class": "WARDUM",
+    "social_class": "AWILUM",
     "age": 20,
     "health": 100.0,
     "energy": 14.811401201875228,
-    "hunger": 50.48160355285118,
-    "thirst": 26.822405329276762,
-    "silver_shekels": 259.58495,
+    "hunger": 51.28160355285118,
+    "thirst": 28.02240532927676,
+    "silver_shekels": 264.58495,
     "barley_qa": 50.0,
-    "owned_land_acres": 1.0,
-    "owned_oxen": 0,
+    "owned_land_acres": 11.0,
+    "owned_oxen": 1,
     "owned_sheep": 0,
     "civic_office": null,
-    "reputation": 50.0,
+    "reputation": 95.0,
     "inventory": {
       "barley": 50.0,
       "timber": 0.8000000000000007
     },
-    "seal": null
+    "seal": {
+      "material": "Steatite",
+      "patron_deity": "Shamash",
+      "prestige": 10
+    }
   },
-  "marriage": null,
+  "marriage": {
+    "bride_name": "Amat-Ba'u",
+    "bride_patronymic": "Marduk-nasir",
+    "bride_social_class": "AWILUM",
+    "terhatum": 15.0,
+    "dowry_silver": 40.0,
+    "dowry_land": 10.0,
+    "dowry_oxen": 1,
+    "year": 1
+  },
   "tablets": [
     {
       "id": "deed_001",
@@ -44,6 +57,38 @@
         "Crown Lands Administration"
       ],
       "principal": 20.0
+    },
+    {
+      "id": "freedom_002",
+      "doc_type": "FREEDOM_CHARTER",
+      "summary": "Manumission Charter (\u1e6duppi andur\u0101rim): Chakra weighed 20.0 silver shekels ransom before the Dayy\u0101n\u016b judges at the Gate of Shamash. The debt is shattered like clay. The slave-mark (abbuttum) is shaved from his brow; anointed with sacred cedar oil and enrolled as a free citizen (Mu\u0161k\u0113num) with full rights of property, legal contract, and court standing under King Hammurabi.",
+      "parties": [
+        "Chakra",
+        "Crown Tribunal of Shamash",
+        "Royal Assembly of Babylon"
+      ],
+      "principal": 20.0
+    },
+    {
+      "id": "tablet_marriage_covenant_0001",
+      "doc_type": "MARRIAGE_CONTRACT",
+      "summary": "Marriage Covenant between Chakra and Amat-Ba'u, daughter of Marduk-nasir. Bride-Price (Terhatum): 15.0 shekels. Dowry (Seriktum): 40.0 silver, 10.0 acres. Statutory Covenant under the Code of Hammurabi \u00a7 128.",
+      "parties": [
+        "Chakra",
+        "Amat-Ba'u, daughter of Marduk-nasir"
+      ],
+      "principal": 15.0
+    },
+    {
+      "id": "tablet_ennoblement_chakra",
+      "doc_type": "ROYAL_DECREE",
+      "summary": "Imperial Charter of Patrician Ennoblement: Chakra is hereby enrolled into the rank of Aw\u012blum by the Puhrum Council of Elders and King Hammurabi. Granted full patrician franchise, standing in the courts of Shamash, and eligibility for all high civic magistracies.",
+      "parties": [
+        "Chakra",
+        "Puhrum Council of Elders",
+        "King Hammurabi"
+      ],
+      "principal": 0.0
     }
   ],
   "has_harvested_spring": false,
